@@ -949,7 +949,7 @@ streams.
   * `Controls` shows pause/step/resume/cancel, **Take control** /
     **Hand back** / **Hand back & resume**, the approval banner with the rule
     and reason, and the instruction box.
-* **Chat panel** (`ChatPanel`, toggled from the top bar on every page, state in
+* **Chat panel** (`ChatPanel`, toggled from the sidebar on every page, state in
   `localStorage`) — a conversation with an Antigravity model through
   `/api/chat`. Send is non-blocking: the panel appends the user message and a
   pending assistant bubble, then long-polls `GET chat/{id}?wait_s=20` until the
@@ -965,6 +965,40 @@ streams.
   success-rate series.
 * **Evals page** — suites with their tasks and verifiers, run controls, run
   history and per-task results linking back to sessions.
+* **Shell and styling** — one vanilla stylesheet (`web/src/styles.css`, no UI
+  or animation libraries) with design tokens at the top. The shell is a sticky
+  left sidebar (brand, icon nav, the Chat toggle, an environment footer with
+  the drivable computers, the default model and the API docs link) next to the
+  content column; below 900 px the same element lays out as a 56 px top bar and
+  `--topbar-h` grows so the sticky offsets (screen card, chat panel, timeline
+  height) follow. The content column is a CSS size container (`main`), so the
+  session page's two-column layout and the metrics grid collapse on the width
+  they actually have — the sidebar and an open chat panel both take from it —
+  rather than on the viewport. The palette is neutral graphite with no colour
+  cast and a single vivid lime accent (`--accent`) for the primary action, the
+  active/selected thing and "ok"; blue (`--info`, `--marker`) is reserved for
+  things a person did — the pointer marker, user notes, the user's chat turns.
+  Surfaces are tonal: rails (`--bg-well`: sidebar, chat panel, inputs, code)
+  → page (`--bg`) → panel (`--bg-elev`) → raised (`--bg-elev-2`) → hover, with
+  translucent fills (`--fill`, `--fill-2`) and hairlines (`--line`) so one token
+  reads right on every surface. Panels, buttons, pills and chips carry no
+  borders or shadows (`--shadow-2` is kept for things that float: toasts,
+  tooltips, overlays on the screenshot); the key numbers on Metrics and Evals
+  sit in one strip with inset dividers instead of a row of boxes; notes and the
+  end-of-session block show their tone on a left bar. Groups of toggles
+  (`.btn-group`) render as a segmented control; a standalone `.toggled` button
+  takes the accent. Type is Inter: 32 px page titles and 34 px stat numerals
+  with tight tracking, 11 px uppercase eyebrows (`h3`, stat labels, table heads,
+  turn headers) with open tracking, body neutral. Motion is deliberately sparse
+  and follows a few rules: only `transform`/`opacity` are animated; entrances
+  use the strong `--ease-out` curve and stay ≤ 250 ms (press feedback 160 ms);
+  things that appear as the agent works — new timeline blocks, chat bubbles,
+  toasts, the approval and control banners, the chat panel — ease in via
+  `@starting-style` transitions, so repeated triggers retarget instead of
+  restarting; toasts leave the way they came, faster than they arrived.
+  Keyboard-driven changes (←/→ step scrubbing, Esc) never animate. Hover styles
+  are gated behind `(hover: hover) and (pointer: fine)` and
+  `prefers-reduced-motion` keeps the fades but drops every translate/scale.
 
 ## 10. Metrics and readout
 

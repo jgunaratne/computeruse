@@ -210,6 +210,10 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
   const rows = Math.min(6, Math.max(1, draft.split("\n").length));
   const recent = (index?.chats ?? []).filter((c) => c.message_count > 0 || c.id === chat?.id);
   const messages = chat?.messages ?? [];
+  // The list unmounts when it empties; don't leave its toggle lit.
+  useEffect(() => {
+    if (recent.length === 0) setShowRecent(false);
+  }, [recent.length]);
 
   return (
     <aside className="chat-panel" aria-label="Chat">

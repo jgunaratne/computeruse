@@ -155,14 +155,18 @@ export function SessionsPage() {
                     {s.eval_task_id && <div className="small dim mono">eval · {s.eval_task_id}</div>}
                   </td>
                   <td>{s.backend}</td>
-                  <td className="mono small">{s.model}</td>
+                  <td className="mono small">
+                    <span className="ellipsis" style={{ maxWidth: 220 }} title={s.model}>
+                      {s.model}
+                    </span>
+                  </td>
                   <td className="num">{s.steps}</td>
                   <td className="num">{fmtDuration(s.duration_ms ?? (s.started_at && !s.terminal ? now - s.started_at * 1000 : null))}</td>
                   <td className="num">{fmtCost(s.cost_usd)}</td>
                   <td>
                     <VerdictPill s={s} />
                   </td>
-                  <td className="dim small">{fmtRelative(s.created_at)}</td>
+                  <td className="dim small nowrap">{fmtRelative(s.created_at)}</td>
                 </tr>
               ))}
             </tbody>

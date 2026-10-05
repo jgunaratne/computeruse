@@ -75,24 +75,44 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], opts: { pollM
 
 // --- toasts -----------------------------------------------------------------
 
-type Toast = { id: number; text: string; tone?: "bad" };
+type Toast = { id: number; text: string; tone?: "bad"; leaving?: boolean };
 const ToastCtx = createContext<(text: string, tone?: "bad") => void>(() => {});
 export const useToast = () => useContext(ToastCtx);
 
+/** How long a toast stays before it starts to leave. */
+export const TOAST_MS = 4500;
+/** Exit transition length; keep in step with `--t-exit` in styles.css. */
+export const TOAST_EXIT_MS = 150;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timers = useRef(new Set<number>());
+  useEffect(() => {
+    const pending = timers.current;
+    return () => pending.forEach((t) => window.clearTimeout(t));
+  }, []);
   const push = useCallback((text: string, tone?: "bad") => {
     const id = Date.now() + Math.random();
     setToasts((t) => [...t, { id, text, tone }]);
-    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    // Two-phase removal so the exit can animate: mark it leaving, then unmount after the transition.
+    const leave = window.setTimeout(() => {
+      timers.current.delete(leave);
+      setToasts((t) => t.map((x) => (x.id === id ? { ...x, leaving: true } : x)));
+      const gone = window.setTimeout(() => {
+        timers.current.delete(gone);
+        setToasts((t) => t.filter((x) => x.id !== id));
+      }, TOAST_EXIT_MS);
+      timers.current.add(gone);
+    }, TOAST_MS);
+    timers.current.add(leave);
   }, []);
   const value = useMemo(() => push, [push]);
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="toasts">
+      <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={classNames("toast", t.tone)}>
+          <div key={t.id} className={classNames("toast", t.tone, t.leaving && "leaving")}>
             {t.text}
           </div>
         ))}

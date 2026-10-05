@@ -32,10 +32,10 @@ export default function App() {
   return (
     <ToastProvider>
       <div className={`app ${chatOpen ? "with-chat" : ""}`}>
-        <header className="topbar">
+        <aside className="sidebar">
           <Link to="/" className="brand">
             <span className="logo" aria-hidden>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <rect x="3" y="4" width="18" height="12" rx="2" />
                 <path d="M8 20h8" />
               </svg>
@@ -44,18 +44,41 @@ export default function App() {
           </Link>
           <nav className="nav" aria-label="Primary">
             <Link to="/" className={route.name === "sessions" || route.name === "session" ? "active" : ""}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                <path d="M3 9h18M8 14l2.5 2L14 12" />
+              </svg>
               Sessions
             </Link>
             <Link to="/metrics" className={route.name === "metrics" ? "active" : ""}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 20V11M10 20V4M16 20v-7M3 20h19" />
+              </svg>
               Metrics
             </Link>
             <Link to="/evals" className={route.name === "evals" ? "active" : ""}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M8.5 12.5l2.3 2.3 4.7-5" />
+              </svg>
               Evals
             </Link>
           </nav>
+          <span className="divider" aria-hidden />
+          <button
+            className={`btn ghost chat-toggle ${chatOpen ? "toggled" : ""}`}
+            onClick={() => setChatOpen((v) => !v)}
+            aria-pressed={chatOpen}
+            title="Chat with an Antigravity model about the agent or the session on screen"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z" />
+            </svg>
+            Chat
+          </button>
           <span className="spacer" />
           <div className="env" title="Computers the server can drive right now">
-            {available.length > 0 && <span>computers: {available.join(", ")}</span>}
+            {available.length > 0 && <span className="computers">computers: {available.join(", ")}</span>}
             {config.data && (
               <span
                 className={`pill ${config.data.models_available ? "ok" : "warn"}`}
@@ -71,21 +94,10 @@ export default function App() {
               </span>
             )}
             <a className="dim" href="/api/docs" target="_blank" rel="noreferrer" title="OpenAPI docs">
-              API
+              API docs ↗
             </a>
-            <button
-              className={`btn sm ghost chat-toggle ${chatOpen ? "toggled" : ""}`}
-              onClick={() => setChatOpen((v) => !v)}
-              aria-pressed={chatOpen}
-              title="Chat with an Antigravity model about the agent or the session on screen"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z" />
-              </svg>
-              Chat
-            </button>
           </div>
-        </header>
+        </aside>
         <div className="body">
           <main>
             {route.name === "sessions" && <SessionsPage />}
