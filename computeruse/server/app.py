@@ -63,12 +63,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if index.exists():
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
+        # The shell must be revalidated on every load (it names the current hashed bundle);
+        # otherwise a tab left open across a rebuild keeps serving the previous UI.
+        shell_headers = {"Cache-Control": "no-cache"}
+
         @app.get("/{path:path}", include_in_schema=False)
         async def spa(path: str) -> FileResponse:
             candidate = dist / path
             if path and candidate.is_file() and candidate.resolve().is_relative_to(dist.resolve()):
-                return FileResponse(candidate)
-            return FileResponse(index)
+                return FileResponse(candidate, headers=shell_headers if candidate == index else None)
+            return FileResponse(index, headers=shell_headers)
     else:
         @app.get("/", include_in_schema=False)
         async def no_ui() -> JSONResponse:

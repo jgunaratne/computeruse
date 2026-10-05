@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Step, Timeline, Turn } from "../lib/timeline";
-import { classNames, fmtClock, fmtMs, outcomeLabel } from "../lib/format";
+import { classNames, fmtClock, fmtMs, outcomeLabel, plural } from "../lib/format";
 import type { Outcome } from "../types";
 
 export interface TimelineProps {
@@ -103,7 +103,8 @@ function StepRow({ step, selected, onSelect }: { step: Step; selected: boolean; 
         </span>
       </div>
       {selected && (
-        <div className="step-detail fade-in">
+        // No entrance animation: this opens on every ←/→ press while scrubbing.
+        <div className="step-detail">
           <div className="kv">
             <b>action</b>
             <code>{JSON.stringify(step.action)}</code>
@@ -160,7 +161,7 @@ function Ended({ data }: { data: Record<string, unknown> }) {
       <div className="row">
         <b>{outcomeLabel[outcome] ?? outcome}</b>
         <span className="dim small">
-          {String(data.steps)} steps · {String(data.turns)} turns · {fmtMs(Number(data.duration_ms))}
+          {plural(Number(data.steps), "step")} · {plural(Number(data.turns), "turn")} · {fmtMs(Number(data.duration_ms))}
           {data.cost_usd != null && ` · $${Number(data.cost_usd).toFixed(3)}`}
         </span>
       </div>

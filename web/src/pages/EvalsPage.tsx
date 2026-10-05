@@ -274,7 +274,7 @@ function RunDetail({ runId }: { runId: string }) {
                     <td className="num">{fmtPct(g.pass_rate)}</td>
                     <td style={{ width: "50%" }}>
                       <div className="bar-track">
-                        <div className={`bar-fill ${(g.pass_rate ?? 0) < 0.5 ? "bad" : (g.pass_rate ?? 0) < 0.8 ? "warn" : ""}`} style={{ width: `${(g.pass_rate ?? 0) * 100}%` }} />
+                        <div className={`bar-fill ${(g.pass_rate ?? 0) < 0.5 ? "bad" : (g.pass_rate ?? 0) < 0.8 ? "warn" : ""}`} style={{ transform: `scaleX(${g.pass_rate ?? 0})` }} />
                       </div>
                     </td>
                   </tr>

@@ -98,7 +98,7 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
 
   return (
     <form className="card pad stack" onSubmit={submit} id="new-session-form">
-      <div className="row" style={{ justifyContent: "space-between" }}>
+      <div className="row wrap" style={{ justifyContent: "space-between" }}>
         <h2>New task</h2>
         <div className="btn-group" role="tablist">
           <button type="button" className={`btn sm ${mode === "model" ? "toggled" : ""}`} onClick={() => setMode("model")} title={config.models_available ? "Drive the computer with a model" : "No model provider is configured on the server"}>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { Spinner, useAsync } from "../components/ui";
-import { fmtCost, fmtMs, fmtPct, outcomeLabel } from "../lib/format";
+import { classNames, fmtCost, fmtMs, fmtPct, outcomeLabel } from "../lib/format";
 import type { Bucket, Outcome } from "../types";
 
 const WINDOWS: { label: string; s?: number }[] = [
@@ -128,10 +128,12 @@ export function MetricsPage() {
 const prefix = (p: string, b: Record<string, Bucket>) => Object.fromEntries(Object.entries(b).map(([k, v]) => [`${p} · ${k}`, v]));
 
 function Stat({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "bad" }) {
+  // Compound readouts ("3.9 s / 8.5 s") take the smaller display size so they keep to one line.
+  const long = value.length > 7;
   return (
     <div className="stat">
       <div className="label">{label}</div>
-      <div className="value" style={tone === "bad" && value !== "0" ? { color: "var(--bad)" } : undefined}>
+      <div className={classNames("value", long && "long")} style={tone === "bad" && value !== "0" ? { color: "var(--bad)" } : undefined}>
         {value}
       </div>
       {hint && <div className="hint">{hint}</div>}
@@ -152,7 +154,7 @@ function Bars({ rows, tone, empty }: { rows: { name: string; value: number }[]; 
               {r.name}
             </span>
             <div className="bar-track">
-              <div className={`bar-fill ${tone ?? ""}`} style={{ width: `${(r.value / max) * 100}%` }} />
+              <div className={`bar-fill ${tone ?? ""}`} style={{ transform: `scaleX(${r.value / max})` }} />
             </div>
             <span className="num">{r.value}</span>
           </div>
@@ -179,12 +181,12 @@ function BucketTable({ buckets, sort }: { buckets: Record<string, Bucket>; sort?
       <tbody>
         {rows.map(([k, b]) => (
           <tr key={k}>
-            <td>{k}</td>
+            <td className="nowrap">{k}</td>
             <td className="num">{b.sessions}</td>
             <td className="num">{fmtPct(b.success_rate)}</td>
             <td>
               <div className="bar-track">
-                <div className={`bar-fill ${(b.success_rate ?? 0) < 0.5 ? "bad" : (b.success_rate ?? 0) < 0.8 ? "warn" : ""}`} style={{ width: `${(b.success_rate ?? 0) * 100}%` }} />
+                <div className={`bar-fill ${(b.success_rate ?? 0) < 0.5 ? "bad" : (b.success_rate ?? 0) < 0.8 ? "warn" : ""}`} style={{ transform: `scaleX(${b.success_rate ?? 0})` }} />
               </div>
             </td>
             <td className="num">{b.median_steps ?? "–"}</td>

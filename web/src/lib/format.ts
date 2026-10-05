@@ -78,4 +78,7 @@ export const statusTone = (s: SessionStatus): "ok" | "warn" | "bad" | "muted" | 
 
 export const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
+/** "1 step", "2 steps" — pass `many` for irregular plurals ("retry" → "retries"). */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
 export const classNames = (...xs: (string | false | null | undefined)[]) => xs.filter(Boolean).join(" ");

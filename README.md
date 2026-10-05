@@ -134,7 +134,7 @@ uv run computeruse run -b simulated -m antigravity:<model-id> -t "Open Notes, ty
 
 ### Chat panel (talk to an Antigravity model about a session)
 
-The **Chat** button in the console's top bar opens a panel on the right that talks
+The **Chat** button in the console's sidebar opens a panel on the right that talks
 to the same Antigravity models — ask what the agent is doing, why a step failed,
 what is on the screen, or anything else. It needs a running Antigravity (the panel
 says so otherwise) and nothing more.
