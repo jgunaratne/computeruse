@@ -1,0 +1,115 @@
+name: simulated-basics
+backend: simulated
+description: >
+  Deterministic regression suite for the harness itself. Runs against the in-process
+  SimOS desktop; every task has a reference script so it can run with model=scripted
+  (no API key) and a ground-truth checker on the simulated state.
+tasks:
+  - id: notes_type_save
+    instruction: "Open the Notes app, type exactly 'hello world' into the note and save it with ctrl+s."
+    tags: [typing, shortcuts, single-app]
+    max_steps: 12
+    checker: {type: sim_state, path: apps.notes.saved_text, equals: "hello world"}
+    script:
+      - {text: "I'll open Notes from the dock.", actions: [{action: left_click, target: dock.notes}]}
+      - {text: "Typing the text and saving.", actions: [{action: type, text: "hello world"}, {action: key, text: "ctrl+s"}]}
+      - {text: "The status line shows Saved. Done.", done: true}
+
+  - id: calc_multiply
+    instruction: "Use the Calculator to compute 12 * 7 and leave the result on screen."
+    tags: [clicking, arithmetic, single-app]
+    max_steps: 15
+    checker: {type: sim_state, path: apps.calc.result, equals: "84"}
+    script:
+      - {text: "Opening the calculator.", actions: [{action: left_click, target: dock.calc}]}
+      - {text: "Entering 12 * 7 =.", actions: [{action: left_click, target: calc.1}, {action: left_click, target: calc.2}, {action: left_click, target: "calc.*"}, {action: left_click, target: calc.7}, {action: left_click, target: "calc.="}]}
+      - {text: "The display shows 84.", done: true}
+
+  - id: calc_keyboard
+    instruction: "Open the Calculator and compute 100 / 4 using the keyboard."
+    tags: [typing, arithmetic, single-app]
+    max_steps: 10
+    checker: {type: sim_state, path: apps.calc.result, equals: "25"}
+    script:
+      - {actions: [{action: left_click, target: dock.calc}]}
+      - {actions: [{action: type, text: "100/4"}, {action: key, text: Return}]}
+      - {done: true}
+
+  - id: settings_dark_mode
+    instruction: "Turn on Dark mode in Settings and apply the change."
+    tags: [clicking, forms, single-app]
+    max_steps: 10
+    checker: {type: sim_state, path: dark_mode, equals: true}
+    script:
+      - {text: "Opening Settings.", actions: [{action: left_click, target: dock.settings}]}
+      - {text: "Enabling dark mode and applying.", actions: [{action: left_click, target: settings.dark_mode}, {action: left_click, target: settings.apply}]}
+      - {done: true}
+
+  - id: browser_navigate
+    instruction: "In the Browser app, go to example.com."
+    tags: [browser, navigation, typing]
+    max_steps: 10
+    checker: {type: sim_state, path: apps.browser.url, equals: "example.com"}
+    script:
+      - {text: "Opening the browser.", actions: [{action: left_click, target: dock.browser}]}
+      - {text: "Entering the URL.", actions: [{action: left_click, target: browser.url}, {action: type, text: "example.com"}, {action: key, text: Return}]}
+      - {done: true}
+
+  - id: browser_follow_link
+    instruction: "In the Browser app, open example.com and then follow the 'More information...' link."
+    tags: [browser, navigation, multi-step]
+    max_steps: 12
+    checker:
+      type: all
+      checks:
+        - {type: sim_state, path: apps.browser.url, equals: "iana.org"}
+        - {type: sim_state, path: apps.browser.history, contains: "example.com"}
+    script:
+      - {actions: [{action: left_click, target: dock.browser}]}
+      - {actions: [{action: left_click, target: browser.url}, {action: type, text: "example.com\n"}]}
+      - {actions: [{action: left_click, target: browser.link}]}
+      - {done: true}
+
+  - id: multi_app_notes_calc
+    instruction: "Compute 9 * 9 in the Calculator, then write the result into a new note and save it."
+    tags: [multi-app, arithmetic, typing]
+    max_steps: 20
+    checker: {type: sim_state, path: apps.notes.saved_text, contains: "81"}
+    script:
+      - {actions: [{action: left_click, target: dock.calc}]}
+      - {actions: [{action: type, text: "9*9="}]}
+      - {text: "Result is 81. Opening Notes.", actions: [{action: left_click, target: dock.notes}]}
+      - {actions: [{action: type, text: "81"}, {action: key, text: "ctrl+s"}]}
+      - {done: true}
+
+  - id: window_drag
+    instruction: "Open Settings and drag its window so that it is further to the left."
+    tags: [drag, window-management]
+    max_steps: 8
+    checker: {type: sim_state, path: open_windows, contains: settings}
+    script:
+      - {actions: [{action: left_click, target: dock.settings}]}
+      - {actions: [{action: left_click_drag, start_target: title.settings, coordinate: [300, 160]}]}
+      - {done: true}
+
+  - id: close_window_shortcut
+    instruction: "Open Notes, then close it again using the window's close button."
+    tags: [clicking, window-management]
+    max_steps: 8
+    checker: {type: sim_state, path: open_windows, equals: []}
+    script:
+      - {actions: [{action: left_click, target: dock.notes}]}
+      - {actions: [{action: left_click, target: close.notes}]}
+      - {done: true}
+
+  # Negative control: the script is deliberately wrong (clicks the desktop). A healthy
+  # harness must report this as a FAILED task rather than a false completion.
+  - id: negative_control_wrong_target
+    instruction: "Open the Notes app and type 'control'."
+    tags: [negative-control]
+    max_steps: 6
+    checker: {type: sim_state, path: apps.notes.text, equals: "control"}
+    script:
+      - {text: "Clicking on the desktop by mistake.", actions: [{action: left_click, coordinate: [100, 100]}]}
+      - {actions: [{action: type, text: "control"}]}
+      - {text: "Done (incorrectly claimed).", done: true}
