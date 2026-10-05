@@ -63,6 +63,18 @@ class EvalRunRequest(BaseModel):
     concurrency: int = Field(default=1, ge=1, le=8)
 
 
+class ChatCreateRequest(BaseModel):
+    model: str | None = None  # Antigravity model id / label (prefix optional); default: settings.chat_model or a Flash model
+    title: str | None = Field(default=None, max_length=120)
+
+
+class ChatSendRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=20_000)
+    model: str | None = None  # switch the model for this and later messages
+    session_id: str | None = None  # attach the unseen part of this session's timeline (+ latest screenshot)
+    screenshot: bool = True
+
+
 def session_to_json(rec: SessionRecord) -> dict[str, Any]:
     d = rec.model_dump(mode="json")
     d["success"] = rec.success

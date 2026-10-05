@@ -424,7 +424,7 @@ def render_delta(messages: list[dict[str, Any]], action_names: dict[str, str]) -
     return "\n".join(lines), media
 
 
-# -- client ------------------------------------------------------------------------------------
+# -- conversations -----------------------------------------------------------------------------
 
 
 def _usage_of(step: dict[str, Any]) -> Usage:
@@ -453,6 +453,185 @@ def _step_error(step: dict[str, Any]) -> str | None:
     return None
 
 
+def _planner_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [s for s in steps if s.get("type") == "CORTEX_STEP_TYPE_PLANNER_RESPONSE"
+            and s.get("status") in _TERMINAL_STATUSES]
+
+
+@dataclass
+class Reply:
+    """What one blocking exchange produced, read back from the new trajectory steps."""
+
+    text: str  # planner responses, joined
+    thinking: str  # planner thinking, joined
+    usage: Usage
+    stop_reason: str  # raw STOP_REASON_*, "" when the server did not say
+    generator: str  # model enum the server reports as the generator, "" when absent
+    steps: list[dict[str, Any]]
+
+    @property
+    def empty(self) -> bool:
+        return not self.text.strip()
+
+    @classmethod
+    def of(cls, steps: list[dict[str, Any]]) -> Reply:
+        texts: list[str] = []
+        thinking: list[str] = []
+        usage = Usage()
+        stop = generator = ""
+        for s in _planner_steps(steps):
+            pr = s.get("plannerResponse") or {}
+            if pr.get("response"):
+                texts.append(str(pr["response"]))
+            if pr.get("thinking"):
+                thinking.append(str(pr["thinking"]))
+            stop = pr.get("stopReason") or stop
+            usage.add(_usage_of(s))
+            generator = (s.get("metadata") or {}).get("generatorModel") or generator
+        return cls(text="\n".join(texts), thinking="\n".join(thinking), usage=usage, stop_reason=stop,
+                   generator=generator, steps=steps)
+
+    def merged(self, other: Reply) -> Reply:
+        usage = Usage()
+        usage.add(self.usage)
+        usage.add(other.usage)
+        return Reply(text="\n".join(t for t in (self.text, other.text) if t),
+                     thinking="\n".join(t for t in (self.thinking, other.thinking) if t), usage=usage,
+                     stop_reason=other.stop_reason or self.stop_reason, generator=other.generator or self.generator,
+                     steps=[*self.steps, *other.steps])
+
+
+_BUSY_HINTS = ("has not processed the previous input", "already canceling", "executor is busy")
+
+
+def _is_busy(e: ModelError) -> bool:
+    """Transient refusal while the server is still finishing (or cancelling) the previous turn."""
+    msg = str(e)
+    return "(500)" in msg and any(h in msg for h in _BUSY_HINTS)
+
+
+class Conversation:
+    """One Antigravity conversation (a *cascade*), driven through blocking user messages.
+
+    It is started with a **tool-less custom agent**: the given system-prompt sections are the whole
+    system prompt, no tools are registered and command execution is off, so the model can only
+    answer — it can never run commands or touch files on the machine hosting the Language Server.
+    The transcript is stateful on the server: `send()` delivers one user message (text plus inline
+    images), waits for the model turn to finish and returns what the new trajectory steps carried.
+    """
+
+    BUSY_RETRIES = 8  # SendUserCascadeMessage attempts while the server reports the executor busy
+    BUSY_RETRY_DELAY = 0.5  # seconds, multiplied by the attempt number (≈18 s in total)
+
+    def __init__(self, ls: LanguageServer, model: AntigravityModel, *, client_session_id: str | None = None) -> None:
+        self.ls = ls
+        self.model = model
+        self.id: str | None = None
+        self.in_flight = False
+        self._seen_steps = 0
+        self._client_session_id = client_session_id or uuid.uuid4().hex
+
+    async def start(self, sections: list[tuple[str, str]], *, title: str, tags: tuple[str, ...] = (CONVERSATION_TAG,)
+                    ) -> str:
+        spec = {
+            "customAgent": {
+                "systemPromptSections": [{"title": t, "content": c} for t, c in sections],
+                "toolNames": [],
+                "excludeDefaultComponents": True,
+            },
+            "commandExecutionPolicy": "off",
+            "cascadeConfig": {"plannerConfig": {"planModel": self.model.enum,
+                                                "requestedModel": {"model": self.model.enum}}},
+        }
+        resp = await self.ls.call("StartCascade", {
+            "source": "CORTEX_TRAJECTORY_SOURCE_SDK", "trajectoryType": "CORTEX_TRAJECTORY_TYPE_CASCADE",
+            "customAgentSpec": spec, "tags": list(tags),
+        }, timeout=90.0)
+        cid = resp.get("cascadeId")
+        if not cid:
+            raise ModelError(f"Antigravity StartCascade returned no conversation id: {resp}")
+        self.id = cid
+        try:
+            await self.ls.call("UpdateConversationAnnotations", {
+                "cascadeIds": [cid], "annotations": {"title": title}, "mergeAnnotations": True}, timeout=30.0)
+        except ModelError as e:  # cosmetic
+            log.debug("could not title Antigravity conversation %s: %s", cid, e)
+        steps, _ = await self.ls.trajectory(cid)
+        self._seen_steps = len(steps)
+        log.info("antigravity: conversation %s on %s (%s)", cid, self.model.label, self.model.enum)
+        return cid
+
+    async def send(self, text: str, media: list[dict[str, Any]] | None = None, *,
+                   model: AntigravityModel | None = None) -> Reply:
+        """Deliver one user message and return the model's reply. `model` switches the planner for this turn."""
+        if self.id is None:
+            raise ModelError("Antigravity conversation has not been started")
+        model = model or self.model
+        body: dict[str, Any] = {
+            "metadata": {"ideName": "computeruse", "ideVersion": "0.1", "extensionName": "computeruse",
+                         "extensionVersion": "0.1", "locale": "en-US", "productName": "sdk",
+                         "apiKey": "sdk-go-key", "sessionId": self._client_session_id},
+            "cascadeId": self.id,
+            "items": [{"text": text}],
+            "cascadeConfig": {"plannerConfig": {"planModel": model.enum}},
+            "blocking": True,
+            "messageOrigin": "AGENT_MESSAGE_ORIGIN_SDK_EXECUTABLE",
+        }
+        if media:
+            body["media"] = media
+        self.in_flight = True
+        try:
+            for attempt in range(1, self.BUSY_RETRIES + 1):
+                try:
+                    await self.ls.call("SendUserCascadeMessage", body)
+                    break
+                except ModelError as e:
+                    if attempt == self.BUSY_RETRIES or not _is_busy(e):
+                        raise
+                    # The server cancels asynchronously: right after a cancel (or a blocking send that returned
+                    # early) it refuses new input for a moment. Wait it out rather than failing the turn.
+                    delay = self.BUSY_RETRY_DELAY * attempt
+                    log.info("antigravity: conversation %s is still busy (%s); retrying in %.1fs", self.id, e, delay)
+                    await asyncio.sleep(delay)
+        finally:
+            self.in_flight = False
+        steps, status = await self.ls.trajectory(self.id)
+        new = steps[self._seen_steps:]
+        self._seen_steps = len(steps)
+        for s in new:
+            err = _step_error(s)
+            if err:
+                raise ModelError(f"Antigravity ({model.label}): {err}")
+        if status == "CASCADE_RUN_STATUS_RUNNING":
+            log.warning("antigravity: conversation %s still running after a blocking send", self.id)
+        return Reply.of(new)
+
+    async def cancel(self) -> None:
+        """Stop a generation that is still running (no-op when nothing is in flight)."""
+        if self.id and self.in_flight:
+            try:
+                await self.ls.call("CancelCascadeInvocation", {"cascadeId": self.id}, timeout=20.0)
+            except ModelError as e:
+                if "already canceling" not in str(e):
+                    raise
+                log.debug("antigravity: conversation %s was already canceling", self.id)
+
+    async def archive(self) -> None:
+        """Hide the conversation from the Antigravity UI (its data is kept)."""
+        if self.id:
+            await self.ls.call("UpdateConversationAnnotations", {
+                "cascadeIds": [self.id], "annotations": {"archived": True}, "mergeAnnotations": True}, timeout=20.0)
+
+
+def image_media(data_b64: str, description: str, *, media_type: str = "image/png") -> dict[str, Any]:
+    """Inline-image entry for `Conversation.send(media=...)`."""
+    return {"mimeType": media_type, "inlineData": data_b64, "description": description,
+            "displayName": f"{description.replace(' ', '-')}.{'jpg' if 'jpeg' in media_type else 'png'}"}
+
+
+# -- computer-use client ----------------------------------------------------------------------------
+
+
 class AntigravityModelClient:
     """Drives one Antigravity conversation per session through the Language Server's JSON RPCs."""
 
@@ -467,14 +646,15 @@ class AntigravityModelClient:
         self.endpoint = endpoint
         self.archive = archive
         self.ls = LanguageServer(endpoint, timeout=timeout, transport=transport)
-        self.conversation_id: str | None = None
+        self.conversation: Conversation | None = None
         self._clock = clock
         self._sent = 0  # canonical messages already delivered to the conversation
-        self._seen_steps = 0  # trajectory steps already consumed
         self._action_names: dict[str, str] = {}  # tool_use id → action name, for result labelling
-        self._session_id = uuid.uuid4().hex  # SDK-style client session id sent with every message
-        self._in_flight = False
         self._lock = asyncio.Lock()
+
+    @property
+    def conversation_id(self) -> str | None:
+        return self.conversation.id if self.conversation else None
 
     def describe(self) -> dict[str, Any]:
         return {"provider": self.provider, "model": self.model.id if self.model else self.model_ref,
@@ -500,48 +680,21 @@ class AntigravityModelClient:
 
     async def _start(self, system: str, display: tuple[int, int], title: str) -> None:
         model = await self._resolve_model()
-        spec = {
-            "customAgent": {
-                "systemPromptSections": [
-                    {"title": "COMPUTER_USE", "content": system},
-                    {"title": "RESPONSE_FORMAT", "content": response_format_section(display)},
-                ],
-                "toolNames": [],
-                "excludeDefaultComponents": True,
-            },
-            "commandExecutionPolicy": "off",
-            "cascadeConfig": {"plannerConfig": {"planModel": model.enum, "requestedModel": {"model": model.enum}}},
-        }
-        resp = await self.ls.call("StartCascade", {
-            "source": "CORTEX_TRAJECTORY_SOURCE_SDK", "trajectoryType": "CORTEX_TRAJECTORY_TYPE_CASCADE",
-            "customAgentSpec": spec, "tags": [CONVERSATION_TAG],
-        }, timeout=90.0)
-        cid = resp.get("cascadeId")
-        if not cid:
-            raise ModelError(f"Antigravity StartCascade returned no conversation id: {resp}")
-        self.conversation_id = cid
-        try:
-            await self.ls.call("UpdateConversationAnnotations", {
-                "cascadeIds": [cid], "annotations": {"title": title}, "mergeAnnotations": True}, timeout=30.0)
-        except ModelError as e:  # cosmetic
-            log.debug("could not title Antigravity conversation %s: %s", cid, e)
-        log.info("antigravity: conversation %s on %s (%s)", cid, model.label, model.enum)
+        self.conversation = Conversation(self.ls, model)
+        await self.conversation.start([("COMPUTER_USE", system), ("RESPONSE_FORMAT", response_format_section(display))],
+                                      title=title)
 
     async def aclose(self) -> None:
         """Stop any generation still running, hide the conversation from the Antigravity UI, drop the connection."""
         try:
-            if self.conversation_id:
-                if self._in_flight:
-                    try:
-                        await self.ls.call("CancelCascadeInvocation", {"cascadeId": self.conversation_id},
-                                           timeout=20.0)
-                    except ModelError as e:
-                        log.warning("antigravity: cancel failed for %s: %s", self.conversation_id, e)
+            if self.conversation is not None:
+                try:
+                    await self.conversation.cancel()
+                except ModelError as e:
+                    log.warning("antigravity: cancel failed for %s: %s", self.conversation_id, e)
                 if self.archive:
                     try:
-                        await self.ls.call("UpdateConversationAnnotations", {
-                            "cascadeIds": [self.conversation_id], "annotations": {"archived": True},
-                            "mergeAnnotations": True}, timeout=20.0)
+                        await self.conversation.archive()
                     except ModelError as e:
                         log.warning("antigravity: archive failed for %s: %s", self.conversation_id, e)
         finally:
@@ -553,92 +706,37 @@ class AntigravityModelClient:
                      max_tokens: int) -> ModelTurn:
         async with self._lock:
             t0 = self._clock()
-            if self.conversation_id is None:
+            if self.conversation is None:
                 task = next((b.get("text", "") for m in messages if m.get("role") == "user"
                              for b in (m.get("content") if isinstance(m.get("content"), list) else [])
                              if b.get("type") == "text"), "")
-                title = f"computeruse · {task.strip()[:70] or 'session'}"
-                await self._start(system, display_from_tools(tools), title)
-                await self._sync_seen()
+                await self._start(system, display_from_tools(tools), f"computeruse · {task.strip()[:70] or 'session'}")
+            assert self.conversation is not None
             text, media = render_delta(messages[self._sent:], self._action_names)
             if not text and not media:
                 text = "(continue)"
             self._sent = len(messages)
-            steps = await self._exchange(text, media)
-            if not _reply_texts(steps):
+            reply = await self.conversation.send(text, media)
+            if reply.empty:
                 # The server went idle without a model reply (empty response, thinking only): ask once more.
                 log.warning("antigravity: empty reply from %s; nudging once", self.model.label if self.model else "?")
-                steps += await self._exchange("Your reply was empty. Reply with one JSON action object, or with "
-                                              "plain text if the task is finished.", [])
-            return self._turn(steps, t0)
+                reply = reply.merged(await self.conversation.send(
+                    "Your reply was empty. Reply with one JSON action object, or with plain text if the task is "
+                    "finished.", []))
+            return self._turn(reply, t0)
 
-    async def _sync_seen(self) -> None:
-        steps, _ = await self.ls.trajectory(self.conversation_id or "")
-        self._seen_steps = len(steps)
-
-    async def _exchange(self, text: str, media: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        assert self.model is not None and self.conversation_id is not None
-        body: dict[str, Any] = {
-            "metadata": {"ideName": "computeruse", "ideVersion": "0.1", "extensionName": "computeruse",
-                         "extensionVersion": "0.1", "locale": "en-US", "productName": "sdk",
-                         "apiKey": "sdk-go-key", "sessionId": self._session_id},
-            "cascadeId": self.conversation_id,
-            "items": [{"text": text}],
-            "cascadeConfig": {"plannerConfig": {"planModel": self.model.enum}},
-            "blocking": True,
-            "messageOrigin": "AGENT_MESSAGE_ORIGIN_SDK_EXECUTABLE",
-        }
-        if media:
-            body["media"] = media
-        self._in_flight = True
-        try:
-            await self.ls.call("SendUserCascadeMessage", body)
-        finally:
-            self._in_flight = False
-        steps, status = await self.ls.trajectory(self.conversation_id)
-        new = steps[self._seen_steps:]
-        self._seen_steps = len(steps)
-        for s in new:
-            err = _step_error(s)
-            if err:
-                raise ModelError(f"Antigravity ({self.model.label}): {err}")
-        if status == "CASCADE_RUN_STATUS_RUNNING":
-            log.warning("antigravity: conversation %s still running after a blocking send", self.conversation_id)
-        return new
-
-    def _turn(self, steps: list[dict[str, Any]], t0: float) -> ModelTurn:
+    def _turn(self, reply: Reply, t0: float) -> ModelTurn:
         assert self.model is not None
-        texts = _reply_texts(steps)
-        thinking: list[str] = []
-        usage = Usage()
-        stop = ""
-        generator = ""
-        for s in _planner_steps(steps):
-            pr = s.get("plannerResponse") or {}
-            if pr.get("thinking"):
-                thinking.append(str(pr["thinking"]))
-            stop = pr.get("stopReason") or stop
-            usage.add(_usage_of(s))
-            generator = (s.get("metadata") or {}).get("generatorModel") or generator
-        if not texts:
+        if reply.empty:
             raise ModelError(f"Antigravity ({self.model.label}) returned no reply"
-                             f"{' (stop reason ' + stop + ')' if stop else ''}")
-        content, stop_reason = parse_reply("\n".join(texts), "\n".join(thinking))
-        if stop == "STOP_REASON_MAX_TOKENS" and stop_reason == "end_turn":
+                             f"{' (stop reason ' + reply.stop_reason + ')' if reply.stop_reason else ''}")
+        content, stop_reason = parse_reply(reply.text, reply.thinking)
+        if reply.stop_reason == "STOP_REASON_MAX_TOKENS" and stop_reason == "end_turn":
             stop_reason = "max_tokens"
         for b in content:
             if b.get("type") == "tool_use":
                 self._action_names[b["id"]] = str(b["input"].get("action", "action"))
+        generator = reply.generator
         model_name = self.model.id if not generator or generator == self.model.enum else generator
-        return ModelTurn(content=content, stop_reason=stop_reason, usage=usage,
+        return ModelTurn(content=content, stop_reason=stop_reason, usage=reply.usage,
                          latency_ms=(self._clock() - t0) * 1000, model=model_name)
-
-
-def _planner_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [s for s in steps if s.get("type") == "CORTEX_STEP_TYPE_PLANNER_RESPONSE"
-            and s.get("status") in _TERMINAL_STATUSES]
-
-
-def _reply_texts(steps: list[dict[str, Any]]) -> list[str]:
-    return [str(pr["response"]) for s in _planner_steps(steps)
-            if (pr := s.get("plannerResponse") or {}).get("response")]

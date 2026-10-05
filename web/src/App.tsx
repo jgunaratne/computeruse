@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { api } from "./api";
+import { ChatPanel } from "./components/ChatPanel";
 import { ToastProvider, useAsync } from "./components/ui";
 import { Link, useRoute } from "./hooks/useRoute";
 import { EvalsPage } from "./pages/EvalsPage";
@@ -6,14 +8,30 @@ import { MetricsPage } from "./pages/MetricsPage";
 import { SessionPage } from "./pages/SessionPage";
 import { SessionsPage } from "./pages/SessionsPage";
 
+const CHAT_OPEN_KEY = "cu:chat:open";
+
 export default function App() {
   const [route] = useRoute();
   const config = useAsync(() => api.config(), []);
   const backends = useAsync(() => api.backends(), []);
   const available = (backends.data ?? []).filter((b) => b.available).map((b) => b.id);
+  const [chatOpen, setChatOpen] = useState(() => {
+    try {
+      return localStorage.getItem(CHAT_OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_OPEN_KEY, chatOpen ? "1" : "0");
+    } catch {
+      /* private mode */
+    }
+  }, [chatOpen]);
   return (
     <ToastProvider>
-      <div className="app">
+      <div className={`app ${chatOpen ? "with-chat" : ""}`}>
         <header className="topbar">
           <Link to="/" className="brand">
             <span className="logo" aria-hidden>
@@ -55,14 +73,28 @@ export default function App() {
             <a className="dim" href="/api/docs" target="_blank" rel="noreferrer" title="OpenAPI docs">
               API
             </a>
+            <button
+              className={`btn sm ghost chat-toggle ${chatOpen ? "toggled" : ""}`}
+              onClick={() => setChatOpen((v) => !v)}
+              aria-pressed={chatOpen}
+              title="Chat with an Antigravity model about the agent or the session on screen"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z" />
+              </svg>
+              Chat
+            </button>
           </div>
         </header>
-        <main>
-          {route.name === "sessions" && <SessionsPage />}
-          {route.name === "session" && <SessionPage key={route.id} id={route.id} />}
-          {route.name === "metrics" && <MetricsPage />}
-          {route.name === "evals" && <EvalsPage runId={route.runId} />}
-        </main>
+        <div className="body">
+          <main>
+            {route.name === "sessions" && <SessionsPage />}
+            {route.name === "session" && <SessionPage key={route.id} id={route.id} />}
+            {route.name === "metrics" && <MetricsPage />}
+            {route.name === "evals" && <EvalsPage runId={route.runId} />}
+          </main>
+          {chatOpen && <ChatPanel sessionId={route.name === "session" ? route.id : undefined} onClose={() => setChatOpen(false)} />}
+        </div>
       </div>
     </ToastProvider>
   );

@@ -30,7 +30,7 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) for how it all fits together.
 | **Models** | Claude via **Vertex AI** with Application Default Credentials (no Anthropic key needed), Claude via the Anthropic API, and **Gemini** via API key or Vertex. One canonical transcript; per-provider wire formats (built-in `computer_20250124` tool, the newer `computer_toolset_20260801`, or a plain JSON-schema tool) are negotiated automatically |
 | **Agent harness** | Observe → think → act loop; coordinate scaling to model-friendly resolutions; harness-served `zoom` for small text; key `repeat`; screen-settle detection; screenshot history pruning; stuck detection with a nudge before giving up; recovery from `max_tokens`-truncated turns; step / time / cost budgets; retries & health checks around the computer |
 | **Guardrails** | Blocked key chords (stricter on a non-isolated desktop), domain allow/block lists for typed URLs, approval gates for credentials / card numbers / destructive shell commands, type-length limit. Per-session overrides can only *tighten* |
-| **Operator console** | Live preview stream, timeline with model reasoning, action overlays (click rings, drag paths, scroll arrows, typed text), decision-vs-result frame scrubbing with `?step=N` deep links, pause / step / resume / cancel, approval banner, **take control** (click on the screen, type, press keys) and *instruct* the agent mid-task |
+| **Operator console** | Live preview stream, timeline with model reasoning, action overlays (click rings, drag paths, scroll arrows, typed text), decision-vs-result frame scrubbing with `?step=N` deep links, pause / step / resume / cancel, approval banner, **take control** (click on the screen, type, press keys) and *instruct* the agent mid-task; a **chat panel** that talks to an Antigravity model about the session on screen (timeline + latest screenshot attached automatically) |
 | **Telemetry & metrics** | Every event persisted to SQLite + PNG frames; success rate, false completions (model said done, verifier disagreed), failure taxonomy, p50/p95 model & action latency, guardrail interventions, cost; markdown **readout** for a usage write-up |
 | **Evals** | YAML suites with verifiers (`sim_state`, `chrome_tab`, `shell`, `final_text`, `guardrail`, `all`/`any`), negative controls, reference scripts so suites run without a model, concurrency, CI gate (`--min-pass-rate`), replay of recorded sessions |
 
@@ -131,6 +131,40 @@ bodies, so there is no SDK or CLI involved:
 uv run computeruse models | sed -n '/antigravity/p'      # ✓ antigravity:<model-id>  antigravity  json  listed by Antigravity · quota 94% left …
 uv run computeruse run -b simulated -m antigravity:<model-id> -t "Open Notes, type hello, save."
 ```
+
+### Chat panel (talk to an Antigravity model about a session)
+
+The **Chat** button in the console's top bar opens a panel on the right that talks
+to the same Antigravity models — ask what the agent is doing, why a step failed,
+what is on the screen, or anything else. It needs a running Antigravity (the panel
+says so otherwise) and nothing more.
+
+* **Grounded in the session you are looking at.** On a session page, *Share
+  session* (on by default) appends the part of that session's timeline the chat
+  has not seen yet to each message — the task the first time, then the steps and
+  their results, what the agent said, guardrail decisions, operator actions,
+  errors and the outcome — plus the latest screenshot (*+ screenshot*; skipped
+  for text-only models). Later messages carry only what is new, so you can ask
+  "and now?" cheaply; if nothing happened, the model is told that. Each user
+  message shows a tag with what was attached. Turn *Share session* off for a
+  general question.
+* **Chat only, never acts.** The conversation is started as a tool-less custom
+  agent (see above): the model cannot click, type, run commands, or change the
+  session — it will tell you to use the console's controls instead.
+* **Models.** The picker lists Antigravity's models; switch at any time, even
+  mid-conversation (the next reply comes from the new model, the transcript stays).
+  The default is `COMPUTERUSE_CHAT_MODEL`, else the first Flash-class model.
+  Replies show the model, latency, token counts and the model's thinking (folded).
+* **Controls.** Enter sends, Shift+Enter inserts a newline; *Stop* cancels a
+  reply that is taking too long; *New* starts a fresh conversation; *Recent*
+  lists the chats of this server run and lets you reopen or delete them.
+* **Where things live.** Chats are kept in server memory for the lifetime of the
+  process (the transcript itself lives in Antigravity, as a conversation titled
+  `computeruse chat · <first message>`, archived when the chat is deleted or the
+  server stops unless `COMPUTERUSE_ANTIGRAVITY_ARCHIVE=false`). The API is
+  `GET/POST /api/chat`, `POST /api/chat/{id}/messages` (returns immediately;
+  `GET /api/chat/{id}?wait_s=20` long-polls for the reply), `POST …/cancel`,
+  `DELETE …`.
 
 ### Which models are available?
 
@@ -340,7 +374,8 @@ accept their conventional un-prefixed names. The important ones:
 | `ANTHROPIC_API_KEY` | – | Claude via the Anthropic API |
 | `GEMINI_API_KEY` | – | Gemini via the Developer API |
 | `COMPUTERUSE_MODEL_PROVIDER` | `auto` | `auto` / `anthropic` / `vertex` / `gemini` / `antigravity` / `none` — pin or disable providers |
-| `COMPUTERUSE_ANTIGRAVITY_ADDRESS` / `_CSRF_TOKEN` / `_ARCHIVE` | auto-detected / `true` | Antigravity Language Server to use; the token is a secret; archive each session's conversation when it ends |
+| `COMPUTERUSE_ANTIGRAVITY_ADDRESS` / `_CSRF_TOKEN` / `_ARCHIVE` | auto-detected / `true` | Antigravity Language Server to use; the token is a secret; archive each session's (and chat's) conversation when it ends |
+| `COMPUTERUSE_CHAT_MODEL` | – (first Flash-class model) | default model of the console's chat panel (`antigravity:` prefix optional) |
 | `COMPUTERUSE_MODEL` | `claude-sonnet-4-5` | default model (falls back to the first available suggestion) |
 | `COMPUTERUSE_VERTEX_TOOL_MODE` | `auto` | `builtin` / `toolset` / `custom`; `auto` picks by model family and adapts on 400 |
 | `COMPUTERUSE_THINKING_EFFORT` | – | `low` / `medium` / `high` → adaptive thinking (Claude) / thinking level (Gemini); dropped if the model rejects it |

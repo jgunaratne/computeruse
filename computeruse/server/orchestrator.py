@@ -32,6 +32,7 @@ from computeruse.computer.base import Computer, ComputerError, Frame
 from computeruse.computer.registry import BackendRegistry
 from computeruse.computer.remote import RemoteComputer
 from computeruse.config import Settings
+from computeruse.server.chat import ChatService
 from computeruse.server.operator import OperatorControl
 from computeruse.telemetry.bus import EventBus
 from computeruse.telemetry.events import (
@@ -419,6 +420,7 @@ class Orchestrator:
         self.bus = EventBus()
         self.registry = BackendRegistry(settings)
         self.catalog = ModelCatalog(settings)
+        self.chat = ChatService(self)
         self.runners: dict[str, SessionRunner] = {}
         self._desktop_lock = asyncio.Lock()
         set_pricing_overrides(settings.pricing_overrides)
@@ -561,6 +563,7 @@ class Orchestrator:
                     await asyncio.wait_for(runner.done.wait(), timeout=15)
                 except TimeoutError:
                     pass
+        await self.chat.close()
         await self.catalog.close()
         self.store.close()
 

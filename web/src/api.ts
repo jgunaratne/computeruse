@@ -1,5 +1,9 @@
 import type {
   Backend,
+  Chat,
+  ChatIndex,
+  ChatSendBody,
+  ChatSendResponse,
   Config,
   ControlCommand,
   ControlExtra,
@@ -81,6 +85,16 @@ export const api = {
   evalRun: (id: string) => request<EvalRun>(`/api/evals/runs/${id}`),
   startEval: (body: { suite: string; model: string; backend?: string; repeats: number; task_ids?: string[]; concurrency?: number }) =>
     request<{ run_id: string; tasks: number }>("/api/evals/run", { method: "POST", body: JSON.stringify(body) }),
+
+  chatIndex: () => request<ChatIndex>("/api/chat"),
+  createChat: (body: { model?: string; title?: string } = {}) =>
+    request<Chat>("/api/chat", { method: "POST", body: JSON.stringify(body) }),
+  /** `waitS > 0` long-polls: the server answers early once a pending reply has landed. */
+  chat: (id: string, waitS = 0, signal?: AbortSignal) => request<Chat>(`/api/chat/${id}${qs({ wait_s: waitS })}`, { signal }),
+  sendChat: (id: string, body: ChatSendBody) =>
+    request<ChatSendResponse>(`/api/chat/${id}/messages`, { method: "POST", body: JSON.stringify(body) }),
+  cancelChat: (id: string) => request<Chat>(`/api/chat/${id}/cancel`, { method: "POST" }),
+  deleteChat: (id: string) => request<void>(`/api/chat/${id}`, { method: "DELETE" }),
 };
 
 export function wsUrl(path: string): string {
