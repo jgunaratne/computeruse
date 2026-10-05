@@ -1,0 +1,65 @@
+# Two ways to use this file:
+#
+#   1. Sandbox only (recommended while developing the harness on the host):
+#        docker compose up -d sandbox
+#        COMPUTERUSE_REMOTE_DAEMON_URL=http://localhost:8800 \
+#        COMPUTERUSE_REMOTE_DAEMON_TOKEN=dev-token \
+#        COMPUTERUSE_REMOTE_LIVE_VIEW_URL=http://localhost:6080/vnc.html?autoconnect=1&resize=scale \
+#        uv run computeruse serve
+#      then pick the "remote" computer in the UI.
+#
+#   2. Everything in containers:
+#        docker compose --profile full up --build
+#      and open http://localhost:8787.
+#
+# NOTE: the Docker path is written against the same daemon protocol the
+# `browser`/`desktop` backends use, but it has not been exercised on a machine
+# without Docker. Treat it as a starting point and run the smoke eval
+# (`computeruse eval --suite browser-smoke --backend remote --model scripted`)
+# the first time you bring it up.
+
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: computeruse-sandbox:latest
+    environment:
+      COMPUTERUSE_DAEMON_TOKEN: ${COMPUTERUSE_DAEMON_TOKEN:-dev-token}
+      SCREEN_SIZE: ${SCREEN_SIZE:-1280x800}
+      START_URL: ${START_URL:-about:blank}
+      ENABLE_VNC: "1"
+    ports:
+      - "127.0.0.1:8800:8800"   # control daemon (bearer token)
+      - "127.0.0.1:6080:6080"   # noVNC live view
+    shm_size: "1gb"             # Chromium needs more than the 64MB default
+    security_opt:
+      - seccomp=unconfined      # Chromium's own sandbox; drop if you use --no-sandbox only
+    # Health is reported by the image's HEALTHCHECK (daemon /health with the token).
+    restart: unless-stopped
+
+  server:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    image: computeruse-server:latest
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    environment:
+      COMPUTERUSE_HOST: 0.0.0.0
+      COMPUTERUSE_PORT: "8787"
+      COMPUTERUSE_DATA_DIR: /data
+      COMPUTERUSE_REMOTE_DAEMON_URL: http://sandbox:8800
+      COMPUTERUSE_REMOTE_DAEMON_TOKEN: ${COMPUTERUSE_DAEMON_TOKEN:-dev-token}
+      COMPUTERUSE_REMOTE_LIVE_VIEW_URL: http://localhost:6080/vnc.html?autoconnect=1&resize=scale
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - computeruse-data:/data
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
+
+volumes:
+  computeruse-data:
