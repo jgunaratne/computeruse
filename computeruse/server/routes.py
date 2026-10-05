@@ -15,14 +15,25 @@ from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 from computeruse import __version__
 from computeruse.evals import runner as eval_runner
 from computeruse.evals.suite import Suite, find_suite, list_suites, run_checker, suite_to_json
+from computeruse.server.chat import ChatError, ChatService
 from computeruse.server.orchestrator import Orchestrator
 from computeruse.server.schemas import (
+    ChatCreateRequest,
+    ChatSendRequest,
     ControlRequest,
     CreateSessionRequest,
     EvalRunRequest,
@@ -493,6 +504,66 @@ def eval_run_detail(request: Request, run_id: str) -> dict[str, Any]:
         raise HTTPException(404, "unknown eval run")
     run["sessions"] = [session_to_json(r) for r in orch.list_sessions(limit=10000, eval_run_id=run_id)]
     return run
+
+
+# -- chat ---------------------------------------------------------------------
+
+
+def _chat(request: Request) -> ChatService:
+    return _orch(request).chat
+
+
+@router.get("/chat")
+def chat_index(request: Request) -> dict[str, Any]:
+    """Whether chat works (it needs a running Antigravity), the models it can use, and the recent chats."""
+    return _chat(request).index()
+
+
+@router.post("/chat", status_code=201)
+async def chat_create(request: Request, req: ChatCreateRequest) -> dict[str, Any]:
+    try:
+        return (await _chat(request).create(model=req.model, title=req.title)).to_json()
+    except ChatError as e:
+        raise HTTPException(e.status, str(e)) from e
+
+
+@router.get("/chat/{chat_id}")
+async def chat_get(request: Request, chat_id: str, wait_s: float = Query(0, ge=0, le=30)) -> dict[str, Any]:
+    """The chat with its messages; `wait_s` long-polls while a reply is being generated."""
+    try:
+        return (await _chat(request).wait(chat_id, wait_s)).to_json()
+    except ChatError as e:
+        raise HTTPException(e.status, str(e)) from e
+
+
+@router.post("/chat/{chat_id}/messages", status_code=202)
+async def chat_send(request: Request, chat_id: str, req: ChatSendRequest) -> dict[str, Any]:
+    """Record a user message and start the reply; poll `GET /chat/{id}?wait_s=` until `pending` clears."""
+    svc = _chat(request)
+    try:
+        user, assistant = await svc.send(chat_id, req.text, model=req.model, session_id=req.session_id,
+                                         screenshot=req.screenshot)
+    except ChatError as e:
+        raise HTTPException(e.status, str(e)) from e
+    return {"user_message": user.to_json(), "message": assistant.to_json(),
+            "chat": svc.get(chat_id).to_json(messages=False)}
+
+
+@router.post("/chat/{chat_id}/cancel")
+async def chat_cancel(request: Request, chat_id: str) -> dict[str, Any]:
+    try:
+        return (await _chat(request).cancel(chat_id)).to_json()
+    except ChatError as e:
+        raise HTTPException(e.status, str(e)) from e
+
+
+@router.delete("/chat/{chat_id}", status_code=204)
+async def chat_delete(request: Request, chat_id: str) -> Response:
+    try:
+        await _chat(request).delete(chat_id)
+    except ChatError as e:
+        raise HTTPException(e.status, str(e)) from e
+    return Response(status_code=204)
 
 
 def error_response(status: int, message: str) -> JSONResponse:

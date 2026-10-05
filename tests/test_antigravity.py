@@ -1,29 +1,30 @@
 """Antigravity provider: Language Server detection, model catalogue, JSON reply protocol, the stateful
 conversation client, and how it plugs into discovery and the model catalog.
 
-Everything runs against `FakeLS`, an in-memory Language Server behind `httpx.MockTransport`
-that mirrors the Connect-JSON shapes observed live (2026-10): no socket is ever opened, and the
-`ANTIGRAVITY_*` variables a real Antigravity environment exports are ignored (`env={}`). Model names are
-fictional.
+Everything runs against `FakeLS` (tests/fake_ls.py), an in-memory Language Server behind
+`httpx.MockTransport` that mirrors the Connect-JSON shapes observed live (2026-10): no socket is ever
+opened, and the `ANTIGRAVITY_*` variables a real Antigravity environment exports are ignored
+(`env={}`). Model names are fictional.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 from typing import Any
 
 import httpx
 import pytest
+from fake_ls import ENDPOINT, MODELS, PNG, TOKEN, FakeLS, error_step, planner
 
 from computeruse.agent.antigravity import (
-    CSRF_HEADER,
     AntigravityEndpoint,
     AntigravityModelClient,
+    Conversation,
     LanguageServer,
     detect_antigravity,
     extract_actions,
     find_model,
+    image_media,
     parse_model_configs,
     parse_reply,
     render_delta,
@@ -38,138 +39,7 @@ from computeruse.agent.providers import ModelCatalog
 from computeruse.config import Settings
 from computeruse.telemetry.events import Usage, estimate_cost_usd
 
-TOKEN = "tok-123"
-ENDPOINT = AntigravityEndpoint(address="localhost:5387", csrf_token=TOKEN, token_source="server")
 TOOLS = [{"type": "computer_20250124", "name": "computer", "display_width_px": 1024, "display_height_px": 768}]
-PNG = base64.b64encode(b"\x89PNG not really").decode()
-
-# The shape `GetCascadeModelConfigData` returns (trimmed to five models; the real list has ~25).
-MODELS: dict[str, Any] = {
-    "clientModelConfigs": [
-        {"label": "Gemini Flash Lite", "modelId": "gemini-flash-lite",
-         "modelOrAlias": {"model": "MODEL_PLACEHOLDER_M1"}, "supportsImages": True,
-         "quotaInfo": {"remainingFraction": 0.93, "resetTime": "2026-10-06T03:00:00Z"}},
-        {"label": "Gemini Pro (High)", "modelId": "gemini-pro-high",
-         "modelOrAlias": {"model": "MODEL_PLACEHOLDER_M2"}, "supportsImages": True,
-         "quotaInfo": {"remainingFraction": 0.5}},
-        {"label": "Claude Sonnet (High)", "modelId": "sonnet-high",
-         "modelOrAlias": {"model": "MODEL_PLACEHOLDER_M3"}, "supportsImages": True,
-         "quotaInfo": {"remainingFraction": 0.0, "resetTime": "2026-10-05T20:00:00Z"}},
-        {"label": "Text Only", "modelId": "text-only", "modelOrAlias": {"model": "MODEL_PLACEHOLDER_M999"},
-         "supportsImages": False},
-        {"label": "Retired", "modelId": "retired", "modelOrAlias": {"model": "MODEL_PLACEHOLDER_M0"},
-         "supportsImages": True, "disabled": True},
-        {"label": "No enum", "modelId": "no-enum"},  # not addressable: skipped
-    ],
-    "clientModelSorts": [
-        {"name": "Recommended", "groups": [{"modelLabels": ["Gemini Pro (High)", "Claude Sonnet (High)"]},
-                                           {"modelLabels": ["Gemini Flash Lite"]}]},
-        {"name": "Alphabetical", "groups": [{"modelLabels": ["Claude Sonnet (High)"]}]},
-    ],
-}
-
-
-def planner(response: str, *, thinking: str = "", stop: str = "STOP_REASON_STOP_PATTERN",
-            usage: dict[str, str] | None = None, model: str = "MODEL_PLACEHOLDER_M1") -> dict[str, Any]:
-    return {"type": "CORTEX_STEP_TYPE_PLANNER_RESPONSE", "status": "CORTEX_STEP_STATUS_DONE",
-            "plannerResponse": {"response": response, "thinking": thinking, "stopReason": stop},
-            "metadata": {"generatorModel": model, "modelUsage": usage or {
-                "inputTokens": "2380", "outputTokens": "495", "thinkingOutputTokens": "400",
-                "responseOutputTokens": "95"}}}
-
-
-def error_step(message: str) -> dict[str, Any]:
-    return {"type": "CORTEX_STEP_TYPE_ERROR_MESSAGE", "status": "CORTEX_STEP_STATUS_DONE",
-            "errorMessage": {"error": {"userErrorMessage": message, "shortError": "boom"}}}
-
-
-class FakeLS:
-    """In-memory Antigravity Language Server: CSRF check, model list, scripted planner replies per message."""
-
-    def __init__(self, *, token: str = TOKEN, models: dict[str, Any] | None = None,
-                 replies: list[list[dict[str, Any]]] | None = None, page_size: int = 100,
-                 index_token: bool = True) -> None:
-        self.token = token
-        self.models = MODELS if models is None else models
-        self.replies = list(replies or [])  # planner steps appended after each user message
-        self.page_size = page_size
-        self.index_token = index_token
-        self.calls: list[tuple[str, dict[str, Any]]] = []
-        self.gets = 0
-        self.steps: dict[str, list[dict[str, Any]]] = {}
-        self.annotations: dict[str, dict[str, Any]] = {}
-        self.cancelled: list[str] = []
-        self._n = 0
-
-    def transport(self) -> httpx.MockTransport:
-        return httpx.MockTransport(self)
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        if request.method == "GET" and request.url.path == "/":
-            self.gets += 1
-            page = f'<script>window.cfg = {{"csrfToken":"{self.token}","x":1}}</script>' if self.index_token else "<p/>"
-            return httpx.Response(200, text=page)
-        if request.headers.get(CSRF_HEADER) != self.token:
-            return httpx.Response(401, json={"code": "unauthenticated", "message": "invalid CSRF token"})
-        method = request.url.path.rsplit("/", 1)[-1]
-        body = json.loads(request.content or b"{}")
-        self.calls.append((method, body))
-        handler = getattr(self, f"rpc_{method}", None)
-        if handler is None:
-            return httpx.Response(404, json={"code": "unimplemented", "message": method})
-        return handler(body)
-
-    def methods(self) -> list[str]:
-        return [m for m, _ in self.calls]
-
-    def bodies(self, method: str) -> list[dict[str, Any]]:
-        return [b for m, b in self.calls if m == method]
-
-    # -- RPCs ---------------------------------------------------------------------
-
-    def rpc_GetCascadeModelConfigData(self, body):  # noqa: N802 - mirrors the wire method name
-        return httpx.Response(200, json=self.models)
-
-    def rpc_StartCascade(self, body):  # noqa: N802
-        self._n += 1
-        cid = f"casc-{self._n}"
-        self.steps[cid] = []
-        return httpx.Response(200, json={"cascadeId": cid})
-
-    def rpc_UpdateConversationAnnotations(self, body):  # noqa: N802
-        for cid in body.get("cascadeIds", []):
-            self.annotations.setdefault(cid, {}).update(body.get("annotations", {}))
-        return httpx.Response(200, json={})
-
-    def rpc_SendUserCascadeMessage(self, body):  # noqa: N802
-        cid = body["cascadeId"]
-        if cid not in self.steps:
-            return self._not_found(cid)
-        self.steps[cid].append({"type": "CORTEX_STEP_TYPE_USER_INPUT", "status": "CORTEX_STEP_STATUS_DONE",
-                                "userInput": {"items": body.get("items", [])}})
-        self.steps[cid].extend(self.replies.pop(0) if self.replies else [])
-        return httpx.Response(200, json={})
-
-    def rpc_GetCascadeTrajectory(self, body):  # noqa: N802
-        cid = body["cascadeId"]
-        if cid not in self.steps:
-            return self._not_found(cid)
-        steps = self.steps[cid]
-        return httpx.Response(200, json={"trajectory": {"steps": steps[:self.page_size]},
-                                         "status": "CASCADE_RUN_STATUS_IDLE", "numTotalSteps": len(steps)})
-
-    def rpc_GetCascadeTrajectorySteps(self, body):  # noqa: N802
-        steps = self.steps[body["cascadeId"]]
-        off = int(body.get("stepOffset", 0))
-        return httpx.Response(200, json={"steps": steps[off:off + self.page_size]})
-
-    def rpc_CancelCascadeInvocation(self, body):  # noqa: N802
-        self.cancelled.append(body["cascadeId"])
-        return httpx.Response(200, json={})
-
-    @staticmethod
-    def _not_found(cid: str) -> httpx.Response:
-        return httpx.Response(500, json={"code": "unknown", "message": f"trajectory not found: {cid}"})
 
 
 def image(data: str = PNG) -> dict[str, Any]:
@@ -478,9 +348,70 @@ async def test_client_close_cancels_in_flight_work_and_respects_archive_flag():
     assert ls.calls == []
     client = client_for(ls, archive=False)
     await one_turn(client)
-    client._in_flight = True  # as if aclose() raced a blocking send
+    assert client.conversation is not None
+    client.conversation.in_flight = True  # as if aclose() raced a blocking send
     await client.aclose()
     assert ls.cancelled == ["casc-1"] and ls.annotations["casc-1"] == {"title": "computeruse · Find the release year"}
+
+
+async def test_conversation_switches_model_per_message_and_cancels_only_in_flight_work():
+    ls = FakeLS(replies=[[planner("hi", model="MODEL_PLACEHOLDER_M1")], [planner("hello", model="MODEL_PLACEHOLDER_M2")]])
+    server = LanguageServer(ENDPOINT, transport=ls.transport())
+    models = {m.id: m for m in await server.models()}
+    conv = Conversation(server, models["gemini-flash-lite"])
+    with pytest.raises(ModelError, match="not been started"):
+        await conv.send("too early")
+    await conv.cancel()  # nothing started, nothing in flight: no RPC
+    assert ls.cancelled == []
+
+    cid = await conv.start([("CHAT", "Be brief.")], title="computeruse chat · test", tags=("computeruse", "chat"))
+    assert cid == "casc-1" and conv.id == cid and ls.annotations[cid] == {"title": "computeruse chat · test"}
+    start = ls.bodies("StartCascade")[0]
+    assert start["tags"] == ["computeruse", "chat"]
+    assert start["customAgentSpec"]["customAgent"] == {"systemPromptSections": [{"title": "CHAT", "content": "Be brief."}],
+                                                        "toolNames": [], "excludeDefaultComponents": True}
+    assert start["customAgentSpec"]["commandExecutionPolicy"] == "off"
+
+    reply = await conv.send("hi there", [image_media(PNG, "screen 1")])
+    assert reply.text == "hi" and reply.generator == "MODEL_PLACEHOLDER_M1" and reply.usage.input_tokens == 2380
+    assert not reply.empty and reply.stop_reason == "STOP_REASON_STOP_PATTERN"
+    reply = await conv.send("and now in pro", model=models["gemini-pro-high"])
+    assert reply.text == "hello" and reply.generator == "MODEL_PLACEHOLDER_M2"
+    sends = ls.bodies("SendUserCascadeMessage")
+    assert [s["cascadeConfig"]["plannerConfig"]["planModel"] for s in sends] == ["MODEL_PLACEHOLDER_M1", "MODEL_PLACEHOLDER_M2"]
+    assert sends[0]["media"] == [{"mimeType": "image/png", "inlineData": PNG, "description": "screen 1",
+                                  "displayName": "screen-1.png"}]
+    assert "media" not in sends[1]
+
+    await conv.cancel()  # idle: still no cancel RPC
+    conv.in_flight = True
+    await conv.cancel()
+    await conv.archive()
+    assert ls.cancelled == [cid] and ls.annotations[cid]["archived"] is True
+    await server.aclose()
+
+
+async def test_conversation_waits_out_a_busy_executor_and_tolerates_double_cancel(monkeypatch):
+    monkeypatch.setattr(Conversation, "BUSY_RETRY_DELAY", 0.0)
+    ls = FakeLS(replies=[[planner("finally")]])
+    server = LanguageServer(ENDPOINT, transport=ls.transport())
+    conv = Conversation(server, (await server.models())[0])
+    await conv.start([("CHAT", "x")], title="t")
+    ls.busy = 3  # the live server refuses input for a moment right after a cancel: its cancellation is asynchronous
+    reply = await conv.send("hello")
+    assert reply.text == "finally" and ls.methods().count("SendUserCascadeMessage") == 4
+    ls.busy = Conversation.BUSY_RETRIES + 1
+    with pytest.raises(ModelError, match="has not processed the previous input"):
+        await conv.send("still busy")
+    assert conv.in_flight is False
+
+    def already_canceling(body):
+        return httpx.Response(500, json={"code": "unknown", "message": "executor is already canceling"})
+
+    ls.rpc_CancelCascadeInvocation = already_canceling  # type: ignore[method-assign]
+    conv.in_flight = True
+    await conv.cancel()  # not an error: the server is already doing what we asked
+    await server.aclose()
 
 
 async def test_language_server_errors_are_model_errors_with_hints():

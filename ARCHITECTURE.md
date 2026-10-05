@@ -132,6 +132,7 @@ session so a crash there cannot take the server down.
 | `computeruse/server/orchestrator.py` | `Orchestrator`, `SessionRunner`, policy/model/config factories |
 | `computeruse/server/operator.py` | `OperatorControl`: takeover bookkeeping and the privacy-preserving summary briefed to the model |
 | `computeruse/server/routes.py` | REST + WebSocket API under `/api`, `InputPump` for operator input |
+| `computeruse/server/chat.py` | `ChatService`: the console's chat panel — tool-less Antigravity conversations, non-blocking turns, session grounding (`session_context`) |
 | `computeruse/server/schemas.py` | Request/response models |
 | `computeruse/server/app.py` | `create_app`, lifespan, CORS, SPA static serving |
 | `computeruse/evals/suite.py` | YAML suite loader, `TaskSpec`, verifier implementations |
@@ -903,6 +904,12 @@ All under `/api` (interactive docs at `/api/docs`):
 | `WS sessions/{id}/ws`, `WS events/ws` | streams (§7.3) |
 | `GET metrics/summary?since_s&backend&include_evals`, `GET metrics/timeseries?days`, `GET metrics/readout` | product metrics |
 | `GET evals/suites`, `POST evals/run` (202, background), `GET evals/runs`, `GET evals/runs/{id}` | eval harness |
+| `GET chat` | chat panel capabilities: `{available, reason, default_model, models[] (id, label, supports_images, available, reason), chats[]}`; `available` is false without a reachable Antigravity Language Server |
+| `POST chat` | `{model?, title?}` → 201 chat (nothing is sent to Antigravity until the first message); 503 when chat is unavailable, 400 on an unknown model |
+| `GET chat/{id}?wait_s` | the chat with its messages; `wait_s` (≤ 30) long-polls while a reply is pending and returns early when it lands |
+| `POST chat/{id}/messages` | `{text, model?, session_id?, screenshot}` → 202 `{user_message, message (pending), chat}`; the reply is generated in the background. `model` switches the planner for this and later turns; `session_id` appends that session's timeline entries the chat has not seen yet (plus the latest frame as inline PNG unless `screenshot=false` or the model is text-only) — the attached range is recorded on the user message as `context`. 409 while the previous reply is pending, 404 unknown chat/session, 400 bad model / empty text |
+| `POST chat/{id}/cancel` | stop the pending reply (`CancelCascadeInvocation`, then the local task); the assistant message ends with `error: "cancelled"` |
+| `DELETE chat/{id}` | forget the chat; its Antigravity conversation is archived (unless `antigravity_archive=false`) |
 
 ## 9. Web console
 
@@ -942,6 +949,18 @@ streams.
   * `Controls` shows pause/step/resume/cancel, **Take control** /
     **Hand back** / **Hand back & resume**, the approval banner with the rule
     and reason, and the instruction box.
+* **Chat panel** (`ChatPanel`, toggled from the top bar on every page, state in
+  `localStorage`) — a conversation with an Antigravity model through
+  `/api/chat`. Send is non-blocking: the panel appends the user message and a
+  pending assistant bubble, then long-polls `GET chat/{id}?wait_s=20` until the
+  reply lands (reverse proxies in front of the server may cut long requests,
+  which is why generation never rides on the POST). On a session page,
+  *Share session* sends `session_id` with each message so the server attaches
+  the unseen part of the timeline and the latest screenshot; the user bubble
+  shows a tag with what was attached. The model picker switches models
+  per message, *Stop* cancels, *Recent* lists this server run's chats. Replies
+  are rendered by `lib/markdown.tsx`, a small renderer that emits React elements
+  only (never raw HTML) and links only `http(s)` URLs.
 * **Metrics page** — the summary (§10) with backend/window filters and a daily
   success-rate series.
 * **Evals page** — suites with their tasks and verifiers, run controls, run
@@ -1127,6 +1146,12 @@ flowchart TB
   them), drives the tool through a JSON reply protocol rather than function
   calling, cannot bound the context (the server keeps every screenshot), and
   reports usage but no cost.
+* Chats are held in server memory (a restart forgets them; the transcript
+  survives only as an archived Antigravity conversation), replies are not
+  streamed token by token (the Language Server's blocking send is awaited and
+  long-polled), and the session context attached to a message is bounded
+  (newest 60 entries / 6 000 characters), so a very long session is summarised
+  by its tail unless the chat followed it from the start.
 * Operator takeover forwards mouse, wheel and keyboard, but not IME
   composition, touch, or the computer's clipboard back to the operator; `⌘` is
   mapped to `ctrl`. The persistent profile is shared across *all* operators of

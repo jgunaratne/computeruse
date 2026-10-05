@@ -386,3 +386,78 @@ export interface CreateSessionBody {
 
 /** One raw operator input, in the computer's action vocabulary (see computeruse/computer/actions.py). */
 export type InputAction = Record<string, unknown> & { action: string };
+
+// --- chat (the console's side panel; see computeruse/server/chat.py) ---------------------
+
+export interface ChatModel {
+  id: string;
+  label: string;
+  supports_images: boolean;
+  available: boolean;
+  reason: string;
+}
+
+/** What the console attached to a user message (the session timeline the chat had not seen yet). */
+export interface ChatContext {
+  session_id: string;
+  events: number;
+  first: boolean;
+  screenshot: boolean;
+  after_seq: number;
+  until_seq: number;
+  note?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  created_at: number;
+  model: string | null;
+  model_label: string | null;
+  thinking: string;
+  usage: Usage | null;
+  latency_ms: number | null;
+  stop_reason: string;
+  error: string | null;
+  pending: boolean;
+  context: ChatContext | null;
+}
+
+export interface ChatSummary {
+  id: string;
+  title: string | null;
+  model: string;
+  model_label: string;
+  created_at: number;
+  updated_at: number;
+  pending: boolean;
+  conversation_id: string | null;
+  message_count: number;
+  sessions: string[];
+}
+
+export interface Chat extends ChatSummary {
+  messages: ChatMessage[];
+}
+
+export interface ChatIndex {
+  available: boolean;
+  reason: string;
+  default_model: string | null;
+  models: ChatModel[];
+  chats: ChatSummary[];
+}
+
+export interface ChatSendBody {
+  text: string;
+  model?: string;
+  session_id?: string;
+  screenshot?: boolean;
+}
+
+export interface ChatSendResponse {
+  user_message: ChatMessage;
+  message: ChatMessage;
+  chat: ChatSummary;
+}

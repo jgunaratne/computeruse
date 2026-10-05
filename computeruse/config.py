@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     antigravity_csrf_token: str | None = Field(default=None,
                                           validation_alias=AliasChoices("COMPUTERUSE_ANTIGRAVITY_CSRF_TOKEN"))
     antigravity_archive: bool = True  # hide finished sessions' conversations from the Antigravity UI (data is kept)
+    # Default model for the console's chat panel (an Antigravity model id/label, with or without the
+    # "antigravity:" prefix). Unset → the first available Antigravity model whose label says "Flash".
+    chat_model: str | None = None
     vertex_tool_mode: Literal["auto", "builtin", "toolset", "custom"] = "auto"
     thinking_effort: Literal["low", "medium", "high"] | None = None  # None → provider default
     # Override/add USD-per-million (input, output) prices, e.g. {"claude-opus-5-5": [5, 25]}.
