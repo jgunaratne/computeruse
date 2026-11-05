@@ -2,7 +2,7 @@
 UV ?= uv
 NPM ?= npm
 
-.PHONY: help setup serve dev web test lint check eval eval-browser readout doctor docker-sandbox clean
+.PHONY: help setup serve dev web test lint check ui-check eval eval-browser readout doctor docker-sandbox clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -28,6 +28,9 @@ lint: ## Ruff + TypeScript type-check
 	cd web && npx tsc --noEmit
 
 check: lint test ## Lint and test
+
+ui-check: web ## Drive the built console in headless Chrome; screenshots in .ui-check/
+	$(UV) run python scripts/ui_check.py
 
 eval: ## Deterministic eval suite on the simulated desktop (no API key needed)
 	$(UV) run computeruse eval --suite simulated-basics --model scripted --concurrency 4

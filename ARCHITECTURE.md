@@ -135,10 +135,22 @@ session so a crash there cannot take the server down.
 | `computeruse/server/chat.py` | `ChatService`: the console's chat panel — tool-less Antigravity conversations, non-blocking turns, session grounding (`session_context`) |
 | `computeruse/server/schemas.py` | Request/response models |
 | `computeruse/server/app.py` | `create_app`, lifespan, CORS, SPA static serving |
+| `computeruse/server/access.py` | `AccessGate`: the access token other machines need when the server listens beyond loopback (§14) |
+| `computeruse/flows/spec.py` | Agent flows: port types, node types (ports with trigger/latch inputs, config fields), model-agent roles, the `Flow` document, `validate_flow`, `catalog()` for the editor |
+| `computeruse/flows/engine.py` | `FlowService` (documents, preflight, runs, the desktop lock) and `FlowRunner`: the signal bus and one runtime per node (goal, computer agent, model agent, critic, join, journal, output) |
+| `computeruse/flows/templates.py` | Starter flows for multi-agent patterns (iterative loop, verifiable goal, fan out & condense, an offline demo) |
+| `computeruse/flows/store.py` | `data/flows/<id>.json` and `data/flow_runs/<run>/` (run record + journal files), atomic writes |
+| `computeruse/server/flow_routes.py` | `/api/flows*` and `/api/flow-runs/*` |
+| `computeruse/schedules/spec.py` | Scheduled automations (`Schedule`, `ScheduleTrigger`, `ScheduleRun`), smart trigger formatting (`describe_trigger`, `schedule_badge`, `compute_next_run`), starter templates, and `PERMISSION_CATALOG` |
+| `computeruse/schedules/store.py` | `data/schedules/<id>.json`, `data/schedule_runs/<run>.json`, and `data/permissions.json` |
+| `computeruse/schedules/engine.py` | `ScheduleService`: background cron-like ticker, immediate `run_now` execution (Antigravity chat, computer sessions, and agent flows), and per-operation permission management |
+| `computeruse/server/schedule_routes.py` | `/api/schedules*` and `/api/permissions` |
 | `computeruse/evals/suite.py` | YAML suite loader, `TaskSpec`, verifier implementations |
 | `computeruse/evals/runner.py` | Suite runner with concurrency, summaries, markdown report |
 | `computeruse/cli.py` | `serve`, `run`, `eval`, `readout`, `doctor`, `daemon` |
-| `web/src` | React console: pages, timeline derivation, screen overlays, stream hook, `lib/input.ts` (DOM events → computer actions) |
+| `web/src` | React console: pages, timeline derivation, screen overlays, stream hook, `lib/appearance.ts` (Craft DS theme/scale bridge + icon hydration), `lib/input.ts` (DOM events → computer actions) |
+| `web/public/vendor/craft-ds` | Read-only hash-pinned Craft Design System kit (`craft-ds.css`, `craft-ds.js`, `tokens.json`, 161 SVG icons, Inter + JetBrains Mono fonts); project mapping in `craft-ds.json` and `docs/DESIGN.md` |
+| `web/src/flow/` | The Agents tab's node editor: `graph.ts` (geometry and pure edits on a flow), `FlowCanvas` (pan/zoom, drag to move and wire, palette drops, run overlay), `NodeCard`, `FlowInspector` |
 | `docker/` | Sandbox image (daemon + Chromium + noVNC), server image |
 | `tests/` | Unit, API (TestClient incl. WebSocket), real-Xvfb driver tests |
 
@@ -828,6 +840,92 @@ The orchestrator additionally rejects a second concurrent `desktop` session
 (two agents fighting over one mouse is never intended) and validates backend
 availability before creating anything.
 
+### 6.3 Agent flows (`computeruse/flows/`)
+
+A **flow** is a small directed graph — edited on the console's Agents tab,
+run by the server — that wires several agents together: computer agents (each
+task is an ordinary session through the orchestrator), tool-less Antigravity
+model agents with a role, critics, joins, journals and outputs. `spec.py` is
+the single source of truth for node types (the editor draws its palette, ports
+and settings forms from `GET /api/flows/catalog`), and `validate_flow` checks
+every document the API saves: unknown types or ports, self-wires, duplicate
+wires, and mismatched port types — a wire joins `text` to `text` or `screen`
+to `screen`, nothing else. The *iterative loop* template, for example:
+
+```mermaid
+flowchart LR
+    G["Goal"] -- task --> D["Director (model agent)"]
+    D -- task --> W["Worker (computer agent)"]
+    W -- result --> C["Critic"]
+    W -. screen .-> C
+    G -. task .-> C
+    C -- pass --> O["Output"]
+    C -- revise --> D
+    G --> J["Journal"]
+    D --> J
+    C -- revise --> J
+    J -. journal .-> D
+```
+
+(dotted: into a context-only input)
+
+**Signals and the bus.** Every node in a run gets a runtime with an inbox.
+`FlowRunner.emit()` routes a `Signal` — one envelope for every node type:
+`kind`, `text`, an optional frame reference, the source, a hop count, `meta` —
+from an output port to every wired input. An input is either a **trigger**:
+the message is queued and the runtime handles its queue one message at a time;
+or a **latch**: the latest message from each wired source is kept and folded
+into the node's next turn as context (*"Context from the rest of the team"* in
+a computer agent's task, a `[Context]` block for a model agent, `[Goal and
+context]` for a critic; a latched screen is attached as an image for
+image-capable models). Latches are what let a journal feed every agent without
+waking them, and let a critic see the worker's final screen: a computer agent
+emits `screen` before `result`, so the screenshot is latched by the time the
+report triggers the critic. A muted node never starts and drops whatever is
+sent to it (the run log records the drop).
+
+**Runtimes.** *Goal* emits its text when the run starts (journals start first,
+so the goal lands after their seed). *Computer agent* runs one session per
+task — `tags=["flow"]`, `metadata.flow` with the flow, run and node ids, the
+node's step budget and extra instructions — and waits for it while a watcher
+mirrors steps and the latest frame onto the card every second; then it emits
+the final screen and a result (the agent's final message, or why it stopped).
+Sessions on the live desktop queue on a lock instead of failing. *Model agent*
+keeps one Antigravity conversation per node (`memory: keep`) or starts one per
+message (`fresh`), with the role's instructions as its system prompt.
+*Critic* is a model agent with a fixed judging prompt plus the rubric; it reads
+`VERDICT: PASS|REVISE` leniently (anything not clearly a pass is a revise),
+emits the work on `pass` or feedback (the critic's reasons and the judged work) on
+`revise`, and after `max_rounds` verdicts passes the last work on, marked
+`max_rounds` — the stop-hook that bounds a loop. *Join* buffers one message per
+unmuted incoming wire and sends them on together. *Journal* appends each message
+to `journal-<node>.md` in the run's directory and re-emits the journal (its
+last 8,000 characters). *Output* records the result and its verdict.
+
+**Ending a run.** A busy counter tracks queued and in-flight trigger messages.
+A run is **completed** as soon as every unmuted output has a result (a flow
+without outputs completes when it goes idle) — unless a result is work a critic
+gave up on at its max rounds, which makes the run **incomplete**, as does going
+idle with an output still empty; **failed** when it goes idle with a node in error,
+or at once when an agent would exceed the run's agent-call budget
+(`settings.max_agent_calls`, default 24 — every session and every model turn
+counts); **cancelled** by the user, by deleting the flow or by server shutdown.
+A message that has crossed 64 wires is dropped, so a loop with no agent in it
+cannot spin. Finishing stops work in flight first (sessions are cancelled,
+model turns get `CancelCascadeInvocation`) and only then cancels the node tasks,
+drains journals so their files hold every delivered message, archives the run's
+Antigravity conversations (unless `antigravity_archive=false`) and writes
+`data/flow_runs/<run>/run.json` — also written at start, so a run still marked
+running when the server comes back is marked **interrupted**.
+
+**Service.** `FlowService` owns the documents (`data/flows/<id>.json`, atomic
+writes); refuses a run that cannot work before anything starts, naming the
+node (no goal or an empty one, model agents without a reachable Antigravity or
+with an exhausted quota, an unavailable computer or model, an unknown demo
+script); allows one run per flow and four at a time; keeps finished runs in
+memory for ten minutes; and serves `wait(after, wait_s)`, a long-poll on the
+run's version counter that the editor uses the way the chat panel does.
+
 ## 7. Telemetry
 
 ### 7.1 Event schema
@@ -910,6 +1008,11 @@ All under `/api` (interactive docs at `/api/docs`):
 | `POST chat/{id}/messages` | `{text, model?, session_id?, screenshot}` → 202 `{user_message, message (pending), chat}`; the reply is generated in the background. `model` switches the planner for this and later turns; `session_id` appends that session's timeline entries the chat has not seen yet (plus the latest frame as inline PNG unless `screenshot=false` or the model is text-only) — the attached range is recorded on the user message as `context`. 409 while the previous reply is pending, 404 unknown chat/session, 400 bad model / empty text |
 | `POST chat/{id}/cancel` | stop the pending reply (`CancelCascadeInvocation`, then the local task); the assistant message ends with `error: "cancelled"` |
 | `DELETE chat/{id}` | forget the chat; its Antigravity conversation is archived (unless `antigravity_archive=false`) |
+| `GET flows/catalog` | the flow editor's vocabulary: `node_types[]` (ports with `type` and `trigger`, config fields with defaults), `port_types`, model-agent `roles[]`, `templates[]`, `antigravity` (available, reason, models), limits |
+| `GET flows`, `POST flows` | flows, newest first, each with its latest run / create `{name?, template?, nodes?, edges?, settings?}` → 201; 404 unknown template, 400 invalid graph (the message names the node or wire) |
+| `GET flows/{id}`, `PUT flows/{id}`, `DELETE flows/{id}` | read / replace the whole document (validated; `created_at` and `template` are kept) / delete (a live run is cancelled first) |
+| `POST flows/{id}/runs`, `GET flows/{id}/runs` | `{goal?}` (replaces every goal's text for this run) → 202 run; 400 from preflight, 409 when the flow is already running, 429 when four runs are active / recent runs |
+| `GET flow-runs/{id}?after&wait_s`, `POST flow-runs/{id}/cancel` | the run — status and reason, agent calls used, per-node state, message log, results; `wait_s` (≤ 30) long-polls until its `version` exceeds `after` or the run ends / stop it |
 
 ## 9. Web console
 
@@ -951,54 +1054,90 @@ streams.
     and reason, and the instruction box.
 * **Chat panel** (`ChatPanel`, toggled from the sidebar on every page, state in
   `localStorage`) — a conversation with an Antigravity model through
-  `/api/chat`. Send is non-blocking: the panel appends the user message and a
-  pending assistant bubble, then long-polls `GET chat/{id}?wait_s=20` until the
-  reply lands (reverse proxies in front of the server may cut long requests,
-  which is why generation never rides on the POST). On a session page,
-  *Share session* sends `session_id` with each message so the server attaches
-  the unseen part of the timeline and the latest screenshot; the user bubble
-  shows a tag with what was attached. The model picker switches models
-  per message, *Stop* cancels, *Recent* lists this server run's chats. Replies
-  are rendered by `lib/markdown.tsx`, a small renderer that emits React elements
-  only (never raw HTML) and links only `http(s)` URLs.
+  `/api/chat`. The chat can answer questions, supervise the running agent, and
+  **control computer use directly** on the user's behalf:
+  * *Direct computer actions* (`click`, `left_click`, `right_click`, `double_click`,
+    `type`, `key`, `scroll`, `drag`, `wait`, `screenshot`) on the active session's
+    computer. If the agent is running, the chat automatically pauses it before
+    executing manual actions, takes an updated screenshot, feeds the result back
+    to the conversation, and lets the model inspect the screen.
+  * *Session controls* (`pause`, `resume`, `step`, `cancel`, `instruct`, `budget`,
+    `approve`, `reject`, `take_control`, `release_control`).
+  * *Session launch* (`start_session` with task description, backend, and budget).
+  Executed actions are reported with status pills (`done` / `failed`) and session
+  links directly in the message bubble.
+  Send is non-blocking: the panel appends the user message and a pending assistant
+  bubble, then long-polls `GET chat/{id}?wait_s=20` until the reply lands. On a
+  session page, *Share session* sends `session_id` with each message so the server
+  attaches the unseen part of the timeline and the latest screenshot; the user bubble
+  shows a tag with what was attached. The model picker switches models per message,
+  *Stop* cancels, *Recent* lists this server run's chats. Replies are rendered by
+  `lib/markdown.tsx`, a small renderer that emits React elements only (never raw HTML)
+  and links only `http(s)` URLs.
+* **Agents page** (`/agents`, `/agents/<flow>`) — the flow editor (§6.3),
+  built without a graph library in three layers: `flow/graph.ts` holds the
+  geometry (fixed card width, header and port-row heights, so wires and
+  hit-testing never measure the DOM) and pure, immutable edits on a flow
+  document (add, duplicate, move, remove, connect with type checking);
+  `FlowCanvas` turns pointer input into those edits; the page owns the document
+  and autosaves it 600 ms after the last edit (flushed with a `keepalive`
+  request when the tab closes). The canvas is one transformed layer (pan/zoom
+  around the pointer, native non-passive wheel listener) holding an SVG of
+  cubic wires under absolutely positioned node cards; a single pair of window
+  pointer listeners drives panning, moving (snapped to an 8 px grid) and
+  wiring. While a wire is dragged, a `data-connect-*` attribute on the canvas
+  lets CSS dim every port it cannot land on; dropping on a card picks its first
+  compatible port, and a refused wire says why in a toast. Palette items are
+  HTML5 drag sources carrying the node type under a private MIME type; a drop
+  converts the pointer to graph coordinates. Backward wires (loops) swing out
+  past both ends and arc over the cards in between when they stay on one row.
+  The inspector edits the selection from the catalog's field specs (picking a
+  role replaces the instructions unless they were edited), shows the selected
+  node's latest input and output, and lists the run log. During a run the
+  page long-polls `GET flow-runs/{id}?after=<version>&wait_s=20`; cards show
+  status, the session link and live thumbnail, replies, verdicts and journal
+  entries, wires that carried a message brighten, and a fresh message briefly
+  pulses its wire (opacity only).
 * **Metrics page** — the summary (§10) with backend/window filters and a daily
   success-rate series.
 * **Evals page** — suites with their tasks and verifiers, run controls, run
   history and per-task results linking back to sessions.
-* **Shell and styling** — one vanilla stylesheet (`web/src/styles.css`, no UI
-  or animation libraries) with design tokens at the top. The shell is a sticky
-  left sidebar (brand, icon nav, the Chat toggle, an environment footer with
-  the drivable computers, the default model and the API docs link) next to the
-  content column; below 900 px the same element lays out as a 56 px top bar and
-  `--topbar-h` grows so the sticky offsets (screen card, chat panel, timeline
-  height) follow. The content column is a CSS size container (`main`), so the
-  session page's two-column layout and the metrics grid collapse on the width
-  they actually have — the sidebar and an open chat panel both take from it —
-  rather than on the viewport. The palette is neutral graphite with no colour
-  cast and a single vivid lime accent (`--accent`) for the primary action, the
-  active/selected thing and "ok"; blue (`--info`, `--marker`) is reserved for
-  things a person did — the pointer marker, user notes, the user's chat turns.
-  Surfaces are tonal: rails (`--bg-well`: sidebar, chat panel, inputs, code)
-  → page (`--bg`) → panel (`--bg-elev`) → raised (`--bg-elev-2`) → hover, with
-  translucent fills (`--fill`, `--fill-2`) and hairlines (`--line`) so one token
-  reads right on every surface. Panels, buttons, pills and chips carry no
-  borders or shadows (`--shadow-2` is kept for things that float: toasts,
-  tooltips, overlays on the screenshot); the key numbers on Metrics and Evals
-  sit in one strip with inset dividers instead of a row of boxes; notes and the
-  end-of-session block show their tone on a left bar. Groups of toggles
-  (`.btn-group`) render as a segmented control; a standalone `.toggled` button
-  takes the accent. Type is Inter: 32 px page titles and 34 px stat numerals
-  with tight tracking, 11 px uppercase eyebrows (`h3`, stat labels, table heads,
-  turn headers) with open tracking, body neutral. Motion is deliberately sparse
-  and follows a few rules: only `transform`/`opacity` are animated; entrances
-  use the strong `--ease-out` curve and stay ≤ 250 ms (press feedback 160 ms);
-  things that appear as the agent works — new timeline blocks, chat bubbles,
-  toasts, the approval and control banners, the chat panel — ease in via
-  `@starting-style` transitions, so repeated triggers retarget instead of
-  restarting; toasts leave the way they came, faster than they arrived.
-  Keyboard-driven changes (←/→ step scrubbing, Esc) never animate. Hover styles
-  are gated behind `(hover: hover) and (pointer: fine)` and
-  `prefers-reduced-motion` keeps the fades but drops every translate/scale.
+* **Shell and styling** — built on the **Craft Design System** (`web/public/vendor/craft-ds/`,
+  v0.16.0, hash-pinned in `craft-ds.json` and documented in `docs/DESIGN.md` and
+  `docs/DECISIONS.md`) with one project stylesheet (`web/src/styles.css`, no
+  third-party UI or animation libraries). `web/index.html` loads `craft-ds.css`,
+  `tokens-data.js`, `icons.js`, and `craft-ds.js`, and `web/src/lib/appearance.ts`
+  synchronises live switching across all **14 themes** (spanning the **Pro
+  Spectrum**, **Studio**, and **Classic 3D bevel** grammars), **4 UI font scales**
+  (`tiny`, `small`, `medium`, `large` via `--craft-font-scale`), and `?theme=` /
+  `?font=` query parameters while hydrating `[data-craft-icon]` SVG icons on React
+  renders. The shell is a sticky left chrome dock (`--craft-chrome`: brand, icon
+  nav, Appearance picker, Chat toggle, environment footer) next to the workspace
+  column; below 900 px the same element lays out as a `52px` top bar and
+  `--topbar-h` grows so sticky offsets (screen card, chat panel, schedule side
+  pane, timeline height) follow. The content column is a CSS size container
+  (`main`), so the session page's two-column layout, the schedule side-pane
+  editor, the flow workspace, and the metrics grid collapse on the width they
+  actually have rather than on the viewport. Every colour, radius, font family,
+  and shadow in `web/src/styles.css` derives from `--craft-*` tokens (`0` raw
+  literals, enforced by `craft-ds probe --strict`): dark themes map semantic
+  statuses and port/node tints onto `--craft-label-*`, light themes
+  (`[data-craft-dark="false"]`) switch to `--craft-label-*-eye` and
+  `--craft-text-dim` for WCAG AA contrast (`--craft-text-faint` is reserved for
+  placeholders), and Classic (`[data-craft-bevel="true"]`) renders square raised
+  and sunken 3D bevels with `--craft-accent` navy indicators. Grammar flags drive
+  component geometry automatically across themes: Pro Spectrum renders pill
+  buttons, top-bar tab strips, `14px` checkboxes (`.craft-toggle.is-adaptive`),
+  and trailing label colons (`.craft-pro-colon`); Studio renders rounded cards,
+  pill tabs, `30×17px` switches, and round badges; Classic renders `0px` corners
+  and bevelled surfaces. Motion stays sparse and follows strict rules: only
+  `transform`/`opacity` are animated; entrances use `--ease-out` and stay ≤ 250 ms
+  (press feedback 160 ms); live additions — timeline blocks, chat bubbles, toasts,
+  approval/control banners, chat and schedule side panes — ease in via
+  `@starting-style` transitions so repeated triggers retarget cleanly. Keyboard
+  navigation (←/→ step scrubbing, Esc) never animates; hover styles sit inside
+  `(hover: hover) and (pointer: fine)`; and `prefers-reduced-motion` preserves
+  opacity fades while dropping every translate/scale.
 
 ## 10. Metrics and readout
 
@@ -1122,9 +1261,21 @@ flowchart TB
   commands (`/exec`) for verifiers — treat it as root-equivalent on the
   controlled machine and never expose it without the token and transport
   security.
-* The server binds to loopback and has **no authentication of its own**. It
-  can start sessions that move the real mouse. Put it behind your own auth
-  (identity-aware proxy, SSH tunnel) before exposing it.
+* The server binds to loopback by default and then has no authentication:
+  only processes on the same machine can reach it. Bound to any other address
+  (`--host ::`, `0.0.0.0`) it runs `AccessGate` (`server/access.py`), a pure
+  ASGI middleware in front of everything — HTTP and WebSocket handshakes alike:
+  requests from other machines need the access token, as the `computeruse_token`
+  cookie (HttpOnly, SameSite=Lax, set from a one-time `?token=` link that is
+  then redirected away), an `Authorization: Bearer` header or a `token` query
+  parameter, compared in constant time; anything else gets 401 (a WebSocket is
+  refused before accept). Loopback peers are always let through, which keeps
+  local tools working but means a proxy on the same host must forward the
+  client address (uvicorn trusts `X-Forwarded-For` from loopback only). The
+  token is `COMPUTERUSE_ACCESS_TOKEN`, or one `computeruse serve` generates the
+  first time it binds beyond loopback and keeps in `<data-dir>/access_token`
+  (mode `0600`); it is a single shared secret sent over plain HTTP, so it suits
+  trusted networks — put an identity-aware proxy or TLS in front otherwise.
 * Isolation levels, strongest first: `docker`/`remote` (separate kernel or
   container) → `browser` (private X display, same user; a *shared, persistent*
   Chrome profile unless the session asks for an ephemeral one) →
@@ -1132,10 +1283,10 @@ flowchart TB
   approval gates, pause/take-over, and the UI warning).
 * The persistent Chrome profile (`<data-dir>/chrome-profile`, mode `0700`)
   holds live session cookies and SSO tokens for whatever the operator signed in
-  to. Anyone who can start a `browser` session — or read the server's data
-  directory — can act as that user on those sites; the server's lack of
-  authentication (above) therefore extends to those internal systems. Use
-  `COMPUTERUSE_CHROME_PROFILE_MODE=ephemeral` where that is not acceptable.
+  to. Anyone who can start a `browser` session — through the API (see the
+  access rules above) or by reading the server's data directory — can act as
+  that user on those sites. Use `COMPUTERUSE_CHROME_PROFILE_MODE=ephemeral`
+  where that is not acceptable.
 * Operator input during a takeover is executed but never persisted: events and
   the model transcript only ever see counts and a summary, so passwords typed
   while signing in do not end up in the event store or in model context.

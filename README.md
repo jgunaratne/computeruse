@@ -2,9 +2,6 @@
 
 An agent harness that operates a real computer through screenshots, mouse and keyboard, with a web console for watching, steering and measuring each run.
 
-<!-- ![Operator console: live screen, timeline of model reasoning, action overlays](docs/screenshot.png) -->
-<!-- TODO: 20–30 s GIF of a browser task running with click rings + timeline -->
-
 ## How it works
 
 ```
@@ -12,20 +9,20 @@ Web console (React/TS) ──HTTP/WS──► API server + agent loop (FastAPI) 
         ▲   events, frames                │                                 (Xvfb + Chrome | GNOME)
         └─────────────────────────────────┤
                                           ▼
-                         Model providers: Claude (Anthropic API / Vertex AI) · Gemini
+                         Model providers: Claude (Anthropic API / Vertex AI) · Gemini · Antigravity
 ```
 
 - **Agent loop:** observe → think → act. Coordinates are scaled to model-friendly resolutions, with a harness-served `zoom` for small text, screen-settle detection, stuck detection that nudges before giving up, and step/time/cost budgets.
 - **Computers:** a real Chrome on a private Xvfb display, the VM's live GNOME desktop (Wayland, via Mutter RemoteDesktop), a remote VM, a Docker sandbox, or a deterministic simulated desktop for tests.
-- **Guardrails:** blocked key chords, domain allow/block lists, and approval gates for credentials, card numbers and destructive shell commands. Per-session overrides can only tighten them.
-- **Operator console:** live preview, a timeline with the model's reasoning, action overlays, frame scrubbing with `?step=N` deep links, pause/step/cancel, and take-control.
+- **Guardrails:** blocked key chords, domain allow/block lists, approval gates for credentials, card numbers and destructive shell commands, and granular per-operation tool permissions (*Always allow*, *Ask every time*, *Never allow*, *Custom*). Per-session overrides can only tighten them.
+- **Operator console:** built on the **Craft Design System** (`web/public/vendor/craft-ds/`, 14 themes across Pro, Studio, and Classic grammars + 4 UI font scales + `?theme=`/`?font=` deep links), with live preview, a timeline with the model's reasoning, action overlays, frame scrubbing with `?step=N` deep links, pause/step/cancel, take-control, a Chat drawer that can supervise and drive the computer, a drag-and-drop **Agents** flow canvas, and a **Schedules** tab for recurring automations.
 - **Evals:** YAML suites with verifiers, negative controls, replay of recorded sessions, and a CI pass-rate gate. Every event lands in SQLite, which feeds metrics like false-completion rate and p95 action latency.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Stack
 
-Python 3.11 · FastAPI · Pydantic · Anthropic SDK · React + TypeScript (Vite) · SQLite · Xvfb / Mutter · Docker
+Python 3.11 · FastAPI · Pydantic · Anthropic SDK · React + TypeScript (Vite) · Craft Design System · SQLite · Xvfb / Mutter · Docker
 
 ## Run it
 

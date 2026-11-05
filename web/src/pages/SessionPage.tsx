@@ -6,7 +6,7 @@ import { TimelineView } from "../components/Timeline";
 import { Pill, Spinner, StatusPill, VerdictPill, useNow, useToast } from "../components/ui";
 import { Link } from "../hooks/useRoute";
 import { useSessionStream } from "../hooks/useSessionStream";
-import { fmtCost, fmtDuration, truncate } from "../lib/format";
+import { classNames, fmtCost, fmtDuration, truncate } from "../lib/format";
 import { buildTimeline } from "../lib/timeline";
 import type { InputAction } from "../types";
 
@@ -136,7 +136,7 @@ export function SessionPage({ id }: { id: string }) {
     <div className="page wide fade-in">
       <div className="session-head">
         <div className="row wrap">
-          <Link to="/" className="btn ghost sm">
+          <Link to="/" className="craft-btn-compact btn ghost sm">
             ← Sessions
           </Link>
           <StatusPill status={session.status} />
@@ -147,6 +147,13 @@ export function SessionPage({ id }: { id: string }) {
           <span className="mono dim small">{session.id}</span>
         </div>
         <div className="task">{session.task}</div>
+        {(session.status === "cancelled" || session.outcome === "cancelled") && (
+          <div className="stopped-task-banner">
+            <span className="stopped-task-dot" aria-hidden>■</span>
+            <span>You stopped this task</span>
+            {session.outcome_reason && <span className="dim">· {session.outcome_reason}</span>}
+          </div>
+        )}
         <div className="meta">
           <span>
             backend <b>{session.backend}</b>
@@ -190,15 +197,29 @@ export function SessionPage({ id }: { id: string }) {
       </div>
 
       <div className="session-layout">
-        <div className="card screen-card">
+        <div className="craft-panel card screen-card">
           <div className="screen-toolbar">
             {selectedStep ? (
               <>
-                <div className="btn-group">
-                  <button className={`btn sm ${!showAfter ? "toggled" : ""}`} onClick={() => setShowAfter(false)} title="What the model saw when it chose this action">
+                <div className="craft-tab-strip btn-group" role="tablist" aria-label="Step frame">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!showAfter}
+                    className={classNames("craft-tab", !showAfter && "is-active toggled")}
+                    onClick={() => setShowAfter(false)}
+                    title="What the model saw when it chose this action"
+                  >
                     Decision
                   </button>
-                  <button className={`btn sm ${showAfter ? "toggled" : ""}`} onClick={() => setShowAfter(true)} title="Screen after the action ran">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={showAfter}
+                    className={classNames("craft-tab", showAfter && "is-active toggled")}
+                    onClick={() => setShowAfter(true)}
+                    title="Screen after the action ran"
+                  >
                     Result
                   </button>
                 </div>
@@ -207,7 +228,7 @@ export function SessionPage({ id }: { id: string }) {
                 <span className="small dim">
                   <span className="kbd">←</span> <span className="kbd">→</span> scrub · <span className="kbd">esc</span> {active ? "live" : "latest"}
                 </span>
-                <button className="btn sm" onClick={() => setSelected(null)} id="btn-live">
+                <button type="button" className="craft-btn-compact btn sm" onClick={() => setSelected(null)} id="btn-live">
                   {active ? "● Live" : "Latest"}
                 </button>
               </>
@@ -228,11 +249,11 @@ export function SessionPage({ id }: { id: string }) {
                 {controlPending && <Pill tone="warn">pausing the agent…</Pill>}
                 {profile && (
                   <span className="pill" title={profile.note + (profile.source ? ` (copy of ${profile.source})` : "")}>
-                    {profile.persistent ? "🔐 profile: persistent" : profile.mode === "ephemeral" ? "profile: ephemeral" : "profile: copy (logins not saved)"}
+                    {profile.persistent ? "profile: persistent" : profile.mode === "ephemeral" ? "profile: ephemeral" : "profile: copy (logins not saved)"}
                   </span>
                 )}
                 {steps.length > 0 && !controlHeld && (
-                  <button className="btn sm" onClick={() => setSelected(steps[steps.length - 1].step)}>
+                  <button type="button" className="craft-btn-compact btn sm" onClick={() => setSelected(steps[steps.length - 1].step)}>
                     Inspect last step
                   </button>
                 )}
@@ -272,7 +293,7 @@ export function SessionPage({ id }: { id: string }) {
           )}
         </div>
 
-        <div className="card">
+        <div className="craft-panel card">
           <Controls session={session} timeline={timeline} control={controlHeld} controlPending={controlPending} sendInput={stream.sendInput} />
           <TimelineView timeline={timeline} selected={selected} onSelect={setSelected} follow={selected == null && active} />
         </div>

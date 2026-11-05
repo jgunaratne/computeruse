@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../api";
-import { Spinner, useAsync } from "../components/ui";
+import { CheckToggle, Spinner, useAsync } from "../components/ui";
 import { classNames, fmtCost, fmtMs, fmtPct, outcomeLabel } from "../lib/format";
 import type { Bucket, Outcome } from "../types";
 
@@ -27,11 +27,11 @@ export function MetricsPage() {
           <h1>Metrics</h1>
           <p className="sub">Task success, where sessions fail, how often the harness has to intervene, and what it costs.</p>
         </div>
-        <div className="row">
-          <label className="check small">
-            <input type="checkbox" checked={includeEvals} onChange={(e) => setIncludeEvals(e.target.checked)} /> include evals
-          </label>
-          <select className="select" style={{ width: 160, height: 28 }} value={backend} onChange={(e) => setBackend(e.target.value)} aria-label="Computer">
+        <div className="row wrap">
+          <CheckToggle checked={includeEvals} onChange={setIncludeEvals} className="small">
+            include evals
+          </CheckToggle>
+          <select className="select sm-select" style={{ width: 160 }} value={backend} onChange={(e) => setBackend(e.target.value)} aria-label="Computer">
             <option value="">all computers</option>
             {(backends.data ?? []).map((b) => (
               <option key={b.id} value={b.id}>
@@ -39,9 +39,16 @@ export function MetricsPage() {
               </option>
             ))}
           </select>
-          <div className="btn-group">
+          <div className="craft-tab-strip btn-group" role="tablist" aria-label="Time window">
             {WINDOWS.map((w, i) => (
-              <button key={w.label} className={`btn sm ${i === win ? "toggled" : ""}`} onClick={() => setWin(i)}>
+              <button
+                key={w.label}
+                type="button"
+                role="tab"
+                aria-selected={i === win}
+                className={classNames("craft-tab", i === win && "is-active toggled")}
+                onClick={() => setWin(i)}
+              >
                 {w.label}
               </button>
             ))}
@@ -53,7 +60,7 @@ export function MetricsPage() {
         m.error ? <div className="notice bad">{m.error}</div> : <Spinner />
       ) : (
         <div className="stack" style={{ gap: 14 }}>
-          <div className="stats">
+          <div className="craft-panel stats">
             <Stat label="Task success rate" value={fmtPct(d.success_rate, 1)} hint={`${d.sessions_ended} finished · ${d.evaluated_sessions} verified by checker`} />
             <Stat label="False completions" value={String(d.false_completions)} hint="model said done, verifier disagreed" tone={d.false_completions ? "bad" : undefined} />
             <Stat label="Median steps (success)" value={d.median_steps_success == null ? "–" : String(d.median_steps_success)} hint={`all sessions: ${d.median_steps_all ?? "–"}`} />
@@ -64,7 +71,7 @@ export function MetricsPage() {
             <Stat label="Active now" value={String(d.sessions_active)} hint={`${d.sessions_total} sessions in window`} />
           </div>
 
-          <div className="card">
+          <div className="craft-panel card">
             <div className="card-head">
               <h2>Daily volume &amp; success (14 days)</h2>
               <span className="small dim">bar = sessions, fill = success share</span>
@@ -75,7 +82,7 @@ export function MetricsPage() {
           </div>
 
           <div className="two-col">
-            <div className="card">
+            <div className="craft-panel card">
               <div className="card-head">
                 <h2>Why sessions fail</h2>
                 <span className="small dim">{Object.values(d.failure_taxonomy).reduce((a, b) => a + b, 0)} failures</span>
@@ -84,7 +91,7 @@ export function MetricsPage() {
                 <Bars rows={Object.entries(d.failure_taxonomy).map(([k, v]) => ({ name: outcomeLabel[k as Outcome] ?? k, value: v }))} tone="bad" empty="No failures in this window." />
               </div>
             </div>
-            <div className="card">
+            <div className="craft-panel card">
               <div className="card-head">
                 <h2>Guardrail interventions</h2>
               </div>
@@ -92,7 +99,7 @@ export function MetricsPage() {
                 <Bars rows={Object.entries(d.guardrail_interventions).map(([k, v]) => ({ name: k, value: v }))} tone="warn" empty="No guardrail blocks or approvals." />
               </div>
             </div>
-            <div className="card">
+            <div className="craft-panel card">
               <div className="card-head">
                 <h2>Action mix</h2>
               </div>
@@ -100,7 +107,7 @@ export function MetricsPage() {
                 <Bars rows={Object.entries(d.action_mix).map(([k, v]) => ({ name: k, value: v }))} tone="info" empty="No actions yet." />
               </div>
             </div>
-            <div className="card">
+            <div className="craft-panel card">
               <div className="card-head">
                 <h2>Success by computer &amp; model</h2>
               </div>
@@ -110,7 +117,7 @@ export function MetricsPage() {
             </div>
           </div>
 
-          <div className="card">
+          <div className="craft-panel card">
             <div className="card-head">
               <h2>Success by tag</h2>
               <span className="small dim">lowest first — where to focus</span>
@@ -133,7 +140,7 @@ function Stat({ label, value, hint, tone }: { label: string; value: string; hint
   return (
     <div className="stat">
       <div className="label">{label}</div>
-      <div className={classNames("value", long && "long")} style={tone === "bad" && value !== "0" ? { color: "var(--bad)" } : undefined}>
+      <div className={classNames("value", long && "long", tone === "bad" && value !== "0" && "text-bad")}>
         {value}
       </div>
       {hint && <div className="hint">{hint}</div>}

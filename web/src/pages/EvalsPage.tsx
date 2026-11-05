@@ -3,7 +3,7 @@ import { api } from "../api";
 import { ModelSelect, discoverySummary, useModels } from "../components/ModelSelect";
 import { Empty, Pill, Spinner, useAsync, useToast } from "../components/ui";
 import { Link, navigate } from "../hooks/useRoute";
-import { fmtCost, fmtPct, fmtRelative } from "../lib/format";
+import { classNames, fmtCost, fmtPct, fmtRelative } from "../lib/format";
 import type { Config, EvalRun, Suite } from "../types";
 
 export function EvalsPage({ runId }: { runId?: string }) {
@@ -22,13 +22,13 @@ export function EvalsPage({ runId }: { runId?: string }) {
         <RunDetail runId={runId} />
       ) : (
         <div className="stack" style={{ gap: 14 }}>
-          <div className="card">
+          <div className="craft-panel card">
             <div className="card-head">
               <h2>Suites</h2>
             </div>
             {suites.data && config.data ? <SuiteList suites={suites.data} config={config.data} onStarted={() => runs.reload()} /> : <div className="card-body"><Spinner /></div>}
           </div>
-          <div className="card">
+          <div className="craft-panel card">
             <div className="card-head">
               <h2>Runs</h2>
             </div>
@@ -90,10 +90,21 @@ function SuiteList({ suites, config, onStarted }: { suites: Suite[]; config: Con
   const live = useModels({ models: config.models, discovery: config.models_discovery, defaultModel: config.model });
   return (
     <>
-      <div className="row small muted" style={{ padding: "0 16px 8px", gap: 8 }}>
+      <div className="row small muted" style={{ padding: "8px 16px", gap: 8 }}>
         <span className="grow">Models: {live.error ?? discoverySummary(live.discovery)}</span>
-        <button className="btn sm ghost" onClick={() => void live.refresh()} disabled={live.refreshing || live.discovery.status === "off"} title="Re-verify which models the server's credentials can call">
-          {live.refreshing ? <span className="spinner" aria-hidden /> : "↻"} {live.refreshing ? "Verifying…" : "Refresh models"}
+        <button
+          type="button"
+          className="craft-btn-compact btn sm ghost"
+          onClick={() => void live.refresh()}
+          disabled={live.refreshing || live.discovery.status === "off"}
+          title="Re-verify which models the server's credentials can call"
+        >
+          {live.refreshing ? (
+            <span className="spinner" aria-hidden />
+          ) : (
+            <span className="craft-icon craft-icon-sm" data-craft-icon="rotate-cw" aria-hidden="true" />
+          )}
+          {live.refreshing ? " Verifying…" : " Refresh models"}
         </button>
       </div>
       {suites.map((s) => (
@@ -124,7 +135,7 @@ function SuiteRow({ suite, config, live, onStarted }: { suite: Suite; config: Co
     }
   };
   return (
-    <details className="suite" style={{ borderBottom: "1px solid var(--line)" }}>
+    <details className="suite">
       <summary>
         <b>{suite.name}</b>
         <span className="tag">{suite.backend}</span>
@@ -132,7 +143,7 @@ function SuiteRow({ suite, config, live, onStarted }: { suite: Suite; config: Co
           {suite.tasks.length} tasks · {scriptable} with reference scripts
         </span>
         <span className="grow" />
-        <span className="row" onClick={(e) => e.preventDefault()}>
+        <span className="row wrap" onClick={(e) => e.preventDefault()}>
           <ModelSelect
             id={`model-${suite.name}`}
             compact
@@ -143,9 +154,9 @@ function SuiteRow({ suite, config, live, onStarted }: { suite: Suite; config: Co
             discovery={live.discovery}
             extraOptions={[{ value: "scripted", label: "scripted (reference)" }]}
           />
-          <input className="input" type="number" min={1} max={20} style={{ width: 64, height: 28 }} value={repeats} onChange={(e) => setRepeats(Number(e.target.value))} title="repeats per task" aria-label="Repeats" />
-          <input className="input" type="number" min={1} max={8} style={{ width: 64, height: 28 }} value={concurrency} onChange={(e) => setConcurrency(Number(e.target.value))} title="concurrent sessions" aria-label="Concurrency" />
-          <button className="btn primary sm" disabled={busy} onClick={start}>
+          <input className="input sm-input" type="number" min={1} max={20} style={{ width: 64 }} value={repeats} onChange={(e) => setRepeats(Number(e.target.value))} title="repeats per task" aria-label="Repeats" />
+          <input className="input sm-input" type="number" min={1} max={8} style={{ width: 64 }} value={concurrency} onChange={(e) => setConcurrency(Number(e.target.value))} title="concurrent sessions" aria-label="Concurrency" />
+          <button type="button" className="craft-btn craft-btn-primary btn primary sm" disabled={busy} onClick={start}>
             Run
           </button>
         </span>
@@ -197,7 +208,7 @@ function RunDetail({ runId }: { runId: string }) {
   return (
     <div className="stack" style={{ gap: 14 }}>
       <div className="row wrap">
-        <Link to="/evals" className="btn ghost sm">
+        <Link to="/evals" className="craft-btn-compact btn ghost sm">
           ← Runs
         </Link>
         <RunStatus r={r} />
@@ -206,7 +217,7 @@ function RunDetail({ runId }: { runId: string }) {
           {r.suite} on {r.backend} with <span className="mono">{r.model}</span>
         </span>
       </div>
-      <div className="stats">
+      <div className="craft-panel stats">
         <div className="stat">
           <div className="label">Pass rate</div>
           <div className="value">{s.pass_rate != null ? fmtPct(s.pass_rate, 1) : r.status === "running" ? `${done}/${sessions.length || "?"} done` : "–"}</div>
@@ -214,7 +225,7 @@ function RunDetail({ runId }: { runId: string }) {
         </div>
         <div className="stat">
           <div className="label">False completions</div>
-          <div className="value" style={s.false_completions ? { color: "var(--bad)" } : undefined}>{s.false_completions ?? "–"}</div>
+          <div className={classNames("value", Boolean(s.false_completions) && "text-bad")}>{s.false_completions ?? "–"}</div>
           <div className="hint">claimed done, verifier failed</div>
         </div>
         <div className="stat">
@@ -228,7 +239,7 @@ function RunDetail({ runId }: { runId: string }) {
         </div>
       </div>
       {s.error && <div className="notice bad">{s.error}</div>}
-      <div className="card">
+      <div className="craft-panel card">
         <div className="card-head">
           <h2>Sessions</h2>
           <span className="small dim">click to open the trace</span>
@@ -259,7 +270,7 @@ function RunDetail({ runId }: { runId: string }) {
         </table>
       </div>
       {s.per_tag && Object.keys(s.per_tag).length > 0 && (
-        <div className="card">
+        <div className="craft-panel card">
           <div className="card-head">
             <h2>By tag</h2>
           </div>

@@ -28,11 +28,15 @@ def _settings(args: argparse.Namespace) -> Settings:
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
+    from computeruse.server.access import is_loopback, load_or_create_token
     from computeruse.server.app import create_app
 
     s = _settings(args)
     host, port = args.host or s.host, args.port or s.port
     s.host, s.port = host, port
+    if not s.access_token and not is_loopback(host):
+        # Reachable from other machines: never without a token (the API drives real computers).
+        s.access_token = load_or_create_token(s.data_dir)
     uvicorn.run(create_app(s), host=host, port=port, log_level="info" if not args.quiet else "warning",
                 ws_ping_interval=20, ws_ping_timeout=20)
     return 0

@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     data_dir: Path = Field(default=Path("data"))
     web_dist: Path = Field(default=Path("web/dist"))
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
+    # What other machines must present (cookie, bearer header or ?token=) — see server/access.py. Unset →
+    # `computeruse serve` generates one when it binds beyond loopback and keeps it in <data_dir>/access_token.
+    # Loopback requests never need it. Secret: never returned by the API.
+    access_token: str | None = None
 
     # --- model access -----------------------------------------------------
     # auto: claude-* → Anthropic API if a key is set, else Vertex AI (ADC); gemini-* → Gemini API key, else Vertex;

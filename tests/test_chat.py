@@ -461,3 +461,110 @@ def test_session_context_formats_headers_and_truncates_long_timelines():
     assert "Task:" not in block and "[screenshot" not in block
     assert session_context(rec, [], first=False, screenshot=None).endswith("No new timeline entries since your previous reply.")
     assert session_context(rec, [], first=True, screenshot=None).endswith("No timeline entries yet.")
+
+
+# -- chat controlling computer use ---------------------------------------------------------------------
+
+
+def test_chat_can_execute_computer_action_and_observe_screen(chat_app):
+    ls = FakeLS(replies=[
+        [planner('I will click on the Notes icon:\n```json\n{"action": "left_click", "coordinate": [454, 700]}\n```')],
+        [planner("I have clicked on Notes and verified the screen.")],
+    ])
+    with chat_app(ls) as c:
+        r = c.post("/api/sessions", json={
+            "task": "Test manual control", "backend": "simulated", "model": "scripted",
+            "script": SCRIPT, "start_paused": True,
+        })
+        assert r.status_code == 201
+        sid = r.json()["id"]
+
+        # Wait for the session to be paused
+        for _ in range(50):
+            if c.get(f"/api/sessions/{sid}").json()["status"] == "paused":
+                break
+            time.sleep(0.05)
+
+        cid = c.post("/api/chat", json={}).json()["id"]
+        c.post(f"/api/chat/{cid}/messages", json={"text": "Click on Notes", "session_id": sid})
+        chat = settle(c, cid)
+
+        assistant_msg = chat["messages"][-1]
+        assert assistant_msg["error"] is None
+        assert "I have clicked on Notes" in assistant_msg["text"]
+        assert len(assistant_msg["actions"]) == 1
+        act = assistant_msg["actions"][0]
+        assert act["type"] == "action" and act["name"] == "left_click" and act["ok"] is True, act
+        assert act["session_id"] == sid
+
+        # Verify the session recorded the manual action
+        events = c.get(f"/api/sessions/{sid}/events").json()
+        manual_evs = [e for e in events if e["type"] == "manual.action"]
+        assert len(manual_evs) >= 1
+        assert manual_evs[0]["data"]["kind"] == "left_click"
+
+        # Verify feedback sent to the model in the second round included execution results and screenshot
+        sends = ls.bodies("SendUserCascadeMessage")
+        assert len(sends) == 2
+        round2_text = sends[1]["items"][0]["text"]
+        assert "[Execution results:" in round2_text
+        assert "left click at (454, 700): ok" in round2_text
+        assert "media" in sends[1] and len(sends[1]["media"]) == 1
+
+
+def test_chat_can_issue_session_controls(chat_app):
+    ls = FakeLS(replies=[
+        [planner('Pausing and adjusting budget:\n```json\n{"command": "budget", "max_steps": 80}\n```\n'
+                 '```json\n{"command": "instruct", "text": "type fast"}\n```')],
+        [planner("Budget updated and instruction sent.")],
+    ])
+    with chat_app(ls) as c:
+        r = c.post("/api/sessions", json={
+            "task": "Test controls", "backend": "simulated", "model": "scripted",
+            "script": SCRIPT, "start_paused": True,
+        })
+        assert r.status_code == 201
+        sid = r.json()["id"]
+
+        for _ in range(50):
+            if c.get(f"/api/sessions/{sid}").json()["status"] == "paused":
+                break
+            time.sleep(0.05)
+
+        cid = c.post("/api/chat", json={}).json()["id"]
+        c.post(f"/api/chat/{cid}/messages", json={"text": "Set max steps to 80 and instruct the agent", "session_id": sid})
+        chat = settle(c, cid)
+
+        assistant_msg = chat["messages"][-1]
+        assert assistant_msg["error"] is None
+        assert len(assistant_msg["actions"]) == 2
+        assert assistant_msg["actions"][0]["name"] == "budget" and assistant_msg["actions"][0]["ok"] is True
+        assert assistant_msg["actions"][1]["name"] == "instruct" and assistant_msg["actions"][1]["ok"] is True
+
+        # Check session metadata budget
+        s = c.get(f"/api/sessions/{sid}").json()
+        assert s["metadata"]["budget"]["max_steps"] == 80
+
+
+def test_chat_can_start_new_session(chat_app):
+    ls = FakeLS(replies=[
+        [planner('Starting a new session:\n```json\n{"command": "start_session", "task": "Browse Wikipedia", "backend": "simulated", "model": "scripted", "script": [{"text": "Done", "done": true}]}\n```')],
+        [planner("Session is started and running.")],
+    ])
+    with chat_app(ls) as c:
+        cid = c.post("/api/chat", json={}).json()["id"]
+        c.post(f"/api/chat/{cid}/messages", json={"text": "Start a session to browse Wikipedia"})
+        chat = settle(c, cid)
+
+        assistant_msg = chat["messages"][-1]
+        assert assistant_msg["error"] is None
+        assert len(assistant_msg["actions"]) == 1
+        act = assistant_msg["actions"][0]
+        assert act["type"] == "command" and act["name"] == "start_session" and act["ok"] is True, act
+        new_sid = act["session_id"]
+        assert new_sid is not None
+
+        # Verify the session exists on the server
+        s = c.get(f"/api/sessions/{new_sid}").json()
+        assert s["id"] == new_sid and s["task"] == "Browse Wikipedia" and s["backend"] == "simulated"
+

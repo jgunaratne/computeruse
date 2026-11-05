@@ -1,8 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCraftAppearance } from "../lib/appearance";
 import { classNames, statusLabel, statusTone } from "../lib/format";
 import type { Session, SessionStatus } from "../types";
 
-export function Pill({ tone, children, mono, title }: { tone?: "ok" | "warn" | "bad" | "info" | "live" | "muted"; children: ReactNode; mono?: boolean; title?: string }) {
+export function Pill({
+  tone,
+  children,
+  mono,
+  title,
+}: {
+  tone?: "ok" | "warn" | "bad" | "info" | "live" | "muted";
+  children: ReactNode;
+  mono?: boolean;
+  title?: string;
+}) {
   return (
     <span className={classNames("pill", tone && tone !== "muted" && tone, mono && "mono")} title={title}>
       {children}
@@ -31,6 +42,45 @@ export function Spinner() {
 
 export function Empty({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>;
+}
+
+/** Grammar-adaptive boolean control: `.craft-checkbox` in Classic, `.craft-toggle.is-adaptive` in Pro/Studio. */
+export function CheckToggle({
+  checked,
+  onChange,
+  children,
+  title,
+  disabled,
+  className,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  children: ReactNode;
+  title?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const { theme } = useCraftAppearance();
+  const isClassic = theme === "classic";
+  return (
+    <label className={classNames("craft-check-row", "check", disabled && "is-disabled", className)} title={title}>
+      <input
+        type="checkbox"
+        className="cu-sr-check"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span
+        className={classNames(
+          isClassic ? "craft-checkbox" : "craft-toggle is-adaptive",
+          checked && "is-checked",
+        )}
+        aria-hidden="true"
+      />
+      <span>{children}</span>
+    </label>
+  );
 }
 
 /** Ticks every second while `active`, for elapsed-time displays. */
@@ -91,29 +141,44 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const pending = timers.current;
     return () => pending.forEach((t) => window.clearTimeout(t));
   }, []);
-  const push = useCallback((text: string, tone?: "bad") => {
-    const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, text, tone }]);
-    // Two-phase removal so the exit can animate: mark it leaving, then unmount after the transition.
-    const leave = window.setTimeout(() => {
-      timers.current.delete(leave);
-      setToasts((t) => t.map((x) => (x.id === id ? { ...x, leaving: true } : x)));
-      const gone = window.setTimeout(() => {
-        timers.current.delete(gone);
-        setToasts((t) => t.filter((x) => x.id !== id));
-      }, TOAST_EXIT_MS);
-      timers.current.add(gone);
-    }, TOAST_MS);
-    timers.current.add(leave);
+  const dismiss = useCallback((id: number) => {
+    setToasts((t) => t.map((x) => (x.id === id ? { ...x, leaving: true } : x)));
+    const gone = window.setTimeout(() => {
+      timers.current.delete(gone);
+      setToasts((t) => t.filter((x) => x.id !== id));
+    }, TOAST_EXIT_MS);
+    timers.current.add(gone);
   }, []);
+  const push = useCallback(
+    (text: string, tone?: "bad") => {
+      const id = Date.now() + Math.random();
+      setToasts((t) => [...t, { id, text, tone }]);
+      // Two-phase removal so the exit can animate: mark it leaving, then unmount after the transition.
+      const leave = window.setTimeout(() => {
+        timers.current.delete(leave);
+        dismiss(id);
+      }, TOAST_MS);
+      timers.current.add(leave);
+    },
+    [dismiss],
+  );
   const value = useMemo(() => push, [push]);
   return (
     <ToastCtx.Provider value={value}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={classNames("toast", t.tone, t.leaving && "leaving")}>
-            {t.text}
+          <div key={t.id} className={classNames("craft-panel", "toast", t.tone, t.leaving && "leaving")}>
+            <span>{t.text}</span>
+            <button
+              type="button"
+              className="craft-icon-btn craft-icon-btn-sm toast-close"
+              onClick={() => dismiss(t.id)}
+              aria-label="Dismiss notification"
+              title="Dismiss"
+            >
+              <span className="craft-icon craft-icon-sm" data-craft-icon="x" aria-hidden="true" />
+            </button>
           </div>
         ))}
       </div>

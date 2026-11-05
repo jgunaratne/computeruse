@@ -32,6 +32,8 @@ from computeruse.computer.base import Computer, ComputerError, Frame
 from computeruse.computer.registry import BackendRegistry
 from computeruse.computer.remote import RemoteComputer
 from computeruse.config import Settings
+from computeruse.flows.engine import FlowService
+from computeruse.schedules.engine import ScheduleService
 from computeruse.server.chat import ChatService
 from computeruse.server.operator import OperatorControl
 from computeruse.telemetry.bus import EventBus
@@ -421,6 +423,8 @@ class Orchestrator:
         self.registry = BackendRegistry(settings)
         self.catalog = ModelCatalog(settings)
         self.chat = ChatService(self)
+        self.flows = FlowService(self)
+        self.schedules = ScheduleService(self)
         self.runners: dict[str, SessionRunner] = {}
         self._desktop_lock = asyncio.Lock()
         set_pricing_overrides(settings.pricing_overrides)
@@ -445,6 +449,7 @@ class Orchestrator:
             allowed_domains=allowed,
             blocked_domains=[*s.blocked_domains, *o.get("blocked_domains", [])],
             max_type_length=min(s.max_type_length, int(o.get("max_type_length") or s.max_type_length)),
+            operation_permissions=self.schedules._permissions,
         )
 
     def make_model(self, name: str, computer: Computer, script: list[dict[str, Any]] | None = None) -> ModelClient:
@@ -552,6 +557,8 @@ class Orchestrator:
         return rec
 
     async def shutdown(self) -> None:
+        await self.schedules.close()
+        await self.flows.close()  # first: stopping a flow also cancels the sessions it started
         for runner in list(self.runners.values()):
             if not runner.done.is_set():
                 runner.controller.cancel()

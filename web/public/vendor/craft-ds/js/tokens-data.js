@@ -1,0 +1,1411 @@
+// Auto-generated from PhotoCraft theme.rs, widgets.rs, panels.rs
+window.CRAFT_DS_SPEC = {
+  "name": "Craft Design System (craft-ds)",
+  "source": "PhotoCraft (crates/ui-egui/src/theme.rs, widgets.rs, panels.rs, docs/ui-design.md)",
+  "version": "0.16.0",
+  "defaultTheme": "proMedium",
+  "typography": {
+    "families": {
+      "proportional": "Inter",
+      "medium": "Inter-Medium",
+      "semibold": "Inter-SemiBold",
+      "monospace": "JetBrains Mono"
+    },
+    "styles": {
+      "heading": {
+        "family": "Inter-SemiBold",
+        "sizePt": 15.0,
+        "weight": 600
+      },
+      "button": {
+        "family": "Inter-Medium",
+        "sizePt": 13.0,
+        "weight": 500
+      },
+      "titleBar": {
+        "family": "Inter-Medium",
+        "sizePt": 13.0,
+        "weight": 500
+      },
+      "pillTab": {
+        "family": "Inter-Medium",
+        "sizePt": 12.5,
+        "weight": 500
+      },
+      "bodyStudio": {
+        "family": "Inter",
+        "sizePt": 12.5,
+        "weight": 400
+      },
+      "bodyPro": {
+        "family": "Inter",
+        "sizePt": 12.0,
+        "weight": 400
+      },
+      "monospace": {
+        "family": "JetBrains Mono",
+        "sizePt": 12.0,
+        "weight": 400
+      },
+      "sectionLabel": {
+        "family": "Inter-Medium",
+        "sizePt": 11.5,
+        "weight": 500
+      },
+      "unitSuffix": {
+        "family": "JetBrains Mono",
+        "sizePt": 11.0,
+        "weight": 400
+      },
+      "small": {
+        "family": "Inter",
+        "sizePt": 10.5,
+        "weight": 400
+      }
+    },
+    "uiFontScale": {
+      "tiny": {
+        "label": "Tiny (10/12)",
+        "multiplier": 0.833333
+      },
+      "small": {
+        "label": "Small (Default 1\u00d7)",
+        "multiplier": 1.0
+      },
+      "medium": {
+        "label": "Medium (14/12)",
+        "multiplier": 1.166667
+      },
+      "large": {
+        "label": "Large (16/12)",
+        "multiplier": 1.333333
+      }
+    }
+  },
+  "metrics": {
+    "itemSpacing": [
+      8.0,
+      6.0
+    ],
+    "buttonPadding": [
+      10.0,
+      4.0
+    ],
+    "interactSize": [
+      24.0,
+      24.0
+    ],
+    "sliderWidth": 150.0,
+    "comboWidth": 120.0,
+    "menuMargin": 6.0,
+    "windowMargin": 16.0,
+    "iconWidth": 14.0,
+    "rowGap": 4.0,
+    "tooltipDelaySec": 0.35,
+    "tooltipWidth": 280.0,
+    "valueFieldHeight": 24.0,
+    "textFieldHeight": 24.0,
+    "popupArrowWidth": 14.0,
+    "popupSliderWidth": 160.0,
+    "buttonHeightPro": 28.0,
+    "buttonHeightStudio": 30.0,
+    "checkboxSize": 14.0,
+    "toggleSize": [
+      30.0,
+      17.0
+    ],
+    "sliderHeight": 18.0,
+    "sliderTrackHeight": 3.0,
+    "sliderGradientTrackHeight": 5.0,
+    "sliderKnobRadiusPro": 6.0,
+    "sliderKnobRadiusStudio": 7.0,
+    "angleDialSize": 42.0,
+    "titleBarHeightPro": 32.0,
+    "titleBarHeightStudio": 38.0,
+    "optionsBarHeightPro": {
+      "standard": 36.0,
+      "narrow": 30.0
+    },
+    "optionsBarHeightStudio": {
+      "standard": 42.0,
+      "narrow": 34.0
+    },
+    "statusBarHeightPro": {
+      "bar": 24.0,
+      "control": 18.0
+    },
+    "statusBarHeightStudio": {
+      "bar": 30.0,
+      "control": 22.0
+    },
+    "toolbarPro": {
+      "singleWidth": 40.0,
+      "buttonSize": 30.0,
+      "marginX": 5,
+      "iconRatio": 0.6667
+    },
+    "toolbarStudio": {
+      "singleWidth": 50.0,
+      "buttonSize": 36.0,
+      "marginX": 7,
+      "iconRatio": 0.52
+    },
+    "railPro": {
+      "width": 36.0,
+      "buttonSize": 28.0
+    },
+    "railStudio": {
+      "width": 44.0,
+      "buttonSize": 32.0
+    },
+    "dockMinWidth": 250.0,
+    "dockDefaultWidthPro": 290.0,
+    "dockDefaultWidthStudio": 300.0,
+    "panelFooterHeight": 30.0,
+    "colorChipsPro": {
+      "chip": 18.0,
+      "step": 10.0,
+      "icon": 13.0
+    },
+    "colorChipsClassic": {
+      "chip": 21.0,
+      "step": 12.0,
+      "icon": 13.0
+    },
+    "colorChipsStudio": {
+      "chip": 30.0,
+      "step": 19.0,
+      "icon": 13.0
+    },
+    "windowShadow": {
+      "offset": [
+        0,
+        10
+      ],
+      "blur": 32
+    },
+    "popupShadow": {
+      "offset": [
+        0,
+        6
+      ],
+      "blur": 20
+    }
+  },
+  "themes": [
+    {
+      "id": "pro",
+      "kind": "Pro",
+      "label": "Pro (Dark)",
+      "family": "Pro Spectrum",
+      "description": "Photoshop-style Spectrum dark: flat charcoal panels (#323232), dark tab strips, Spectrum blue accent (#378ef0), pill buttons, checkboxes, compact 12 px type.",
+      "dark": true,
+      "pro": true,
+      "bevel": false,
+      "round_chips": false,
+      "chrome": "#323232",
+      "canvas": "#282828",
+      "canvas_dot": "#282828",
+      "dock": "#1e1e1e",
+      "card": "#323232",
+      "card_border": "#1e1e1e",
+      "field": "#242424",
+      "field_border": "#4a4a4a",
+      "hover": "#424242",
+      "pressed": "#4e4e4e",
+      "text": "#dedede",
+      "text_dim": "#b2b2b2",
+      "text_faint": "#808080",
+      "icon": "#c8c8c8",
+      "accent": "#378ef0",
+      "accent_soft": "#4e4e4e",
+      "accent_border": "#378ef0",
+      "accent_text": "#ffffff",
+      "separator": "#1e1e1e",
+      "shadow": "rgba(0, 0, 0, 0.5882)",
+      "primary_bg": "#378ef0",
+      "primary_text": "#ffffff",
+      "danger": "#ec5b62",
+      "warning": "#e8b046",
+      "radius_sm": 3.0,
+      "radius": 4.0,
+      "radius_lg": 6.0,
+      "tab_strip": "#262626",
+      "row_selected": "#525252",
+      "histogram_bg": "#282828",
+      "histogram_level": 225,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "#606060",
+      "knob_outline": "#282828"
+    },
+    {
+      "id": "proMedium",
+      "kind": "ProMedium",
+      "label": "Pro (Medium Gray)",
+      "family": "Pro Spectrum",
+      "description": "Photoshop 2026 default (second) interface brightness: #535353 panels, #282828 canvas surround.",
+      "dark": true,
+      "pro": true,
+      "bevel": false,
+      "round_chips": false,
+      "chrome": "#535353",
+      "canvas": "#282828",
+      "canvas_dot": "#282828",
+      "dock": "#424242",
+      "card": "#535353",
+      "card_border": "#424242",
+      "field": "#454545",
+      "field_border": "#686868",
+      "hover": "#626262",
+      "pressed": "#707070",
+      "text": "#eeeeee",
+      "text_dim": "#d4d4d4",
+      "text_faint": "#a0a0a0",
+      "icon": "#e2e2e2",
+      "accent": "#378ef0",
+      "accent_soft": "#6e6e6e",
+      "accent_border": "#378ef0",
+      "accent_text": "#ffffff",
+      "separator": "#3e3e3e",
+      "shadow": "rgba(0, 0, 0, 0.5882)",
+      "primary_bg": "#378ef0",
+      "primary_text": "#ffffff",
+      "danger": "#ec5b62",
+      "warning": "#e8b046",
+      "radius_sm": 3.0,
+      "radius": 4.0,
+      "radius_lg": 6.0,
+      "tab_strip": "#4a4a4a",
+      "row_selected": "#6b6b6b",
+      "histogram_bg": "#282828",
+      "histogram_level": 225,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "#606060",
+      "knob_outline": "#282828"
+    },
+    {
+      "id": "proLightGray",
+      "kind": "ProLightGray",
+      "label": "Pro (Light Gray)",
+      "family": "Pro Spectrum",
+      "description": "Photoshop third interface brightness: #b8b8b8 panels, dark text, mid-gray canvas.",
+      "dark": false,
+      "pro": true,
+      "bevel": false,
+      "round_chips": false,
+      "chrome": "#b8b8b8",
+      "canvas": "#a0a0a0",
+      "canvas_dot": "#a0a0a0",
+      "dock": "#a8a8a8",
+      "card": "#b8b8b8",
+      "card_border": "#a0a0a0",
+      "field": "#d6d6d6",
+      "field_border": "#8c8c8c",
+      "hover": "#c6c6c6",
+      "pressed": "#aaaaaa",
+      "text": "#141414",
+      "text_dim": "#343434",
+      "text_faint": "#606060",
+      "icon": "#262626",
+      "accent": "#378ef0",
+      "accent_soft": "#d0d0d0",
+      "accent_border": "#378ef0",
+      "accent_text": "#004296",
+      "separator": "#9e9e9e",
+      "shadow": "rgba(0, 0, 0, 0.2745)",
+      "primary_bg": "#378ef0",
+      "primary_text": "#ffffff",
+      "danger": "#ec5b62",
+      "warning": "#e8b046",
+      "radius_sm": 3.0,
+      "radius": 4.0,
+      "radius_lg": 6.0,
+      "tab_strip": "#aaaaaa",
+      "row_selected": "#d4d4d4",
+      "histogram_bg": "#282828",
+      "histogram_level": 225,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "#c9c9c9",
+      "knob_outline": "#282828"
+    },
+    {
+      "id": "proLight",
+      "kind": "ProLight",
+      "label": "Pro (Light)",
+      "family": "Pro Spectrum",
+      "description": "Photoshop fourth (lightest) interface brightness: #f0f0f0 panels, white fields, light-gray canvas.",
+      "dark": false,
+      "pro": true,
+      "bevel": false,
+      "round_chips": false,
+      "chrome": "#f0f0f0",
+      "canvas": "#d6d6d6",
+      "canvas_dot": "#d6d6d6",
+      "dock": "#e2e2e2",
+      "card": "#f0f0f0",
+      "card_border": "#d6d6d6",
+      "field": "#ffffff",
+      "field_border": "#bababa",
+      "hover": "#e2e2e2",
+      "pressed": "#cecece",
+      "text": "#141414",
+      "text_dim": "#404040",
+      "text_faint": "#787878",
+      "icon": "#2e2e2e",
+      "accent": "#378ef0",
+      "accent_soft": "#d6d6d6",
+      "accent_border": "#378ef0",
+      "accent_text": "#1062c4",
+      "separator": "#d6d6d6",
+      "shadow": "rgba(0, 0, 0, 0.1961)",
+      "primary_bg": "#378ef0",
+      "primary_text": "#ffffff",
+      "danger": "#ec5b62",
+      "warning": "#e8b046",
+      "radius_sm": 3.0,
+      "radius": 4.0,
+      "radius_lg": 6.0,
+      "tab_strip": "#e2e2e2",
+      "row_selected": "#cccccc",
+      "histogram_bg": "#282828",
+      "histogram_level": 225,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "#c9c9c9",
+      "knob_outline": "#282828"
+    },
+    {
+      "id": "studio",
+      "kind": "Studio",
+      "label": "Studio (Dark)",
+      "family": "Studio",
+      "description": "Dark studio style: near-black surfaces, rounded cards (6/8/12 px), pill tabs, soft violet accent (#8b7cf6), iOS toggles, round color chips.",
+      "dark": true,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#141415",
+      "canvas": "#0e0e0f",
+      "canvas_dot": "#2e2e32",
+      "dock": "#111112",
+      "card": "#1a1a1c",
+      "card_border": "#28282c",
+      "field": "#232326",
+      "field_border": "#343439",
+      "hover": "#2c2c30",
+      "pressed": "#38383e",
+      "text": "#ececf0",
+      "text_dim": "#96969e",
+      "text_faint": "#606068",
+      "icon": "#c4c4cc",
+      "accent": "#8b7cf6",
+      "accent_soft": "rgba(139, 124, 246, 0.1804)",
+      "accent_border": "rgba(160, 148, 255, 0.4314)",
+      "accent_text": "#d6d0ff",
+      "separator": "#26262a",
+      "shadow": "rgba(0, 0, 0, 0.549)",
+      "primary_bg": "#f6f6f8",
+      "primary_text": "#0c0c0e",
+      "danger": "#f06060",
+      "warning": "#f0be5a",
+      "radius_sm": 6.0,
+      "radius": 8.0,
+      "radius_lg": 12.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#0e0e0f",
+      "histogram_level": 225,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(139, 124, 246, 0.1804)",
+      "knob_outline": "none"
+    },
+    {
+      "id": "studioLight",
+      "kind": "StudioLight",
+      "label": "Studio (Light)",
+      "family": "Studio",
+      "description": "Studio system on light surfaces: crisp white/cool-gray cards, deep violet accent (#6c5ce7), high-contrast dark primary button.",
+      "dark": false,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#f6f6f8",
+      "canvas": "#e2e2e6",
+      "canvas_dot": "#c8c8ce",
+      "dock": "#f0f0f3",
+      "card": "#fcfcfd",
+      "card_border": "#dedee4",
+      "field": "#f2f2f5",
+      "field_border": "#d6d6dc",
+      "hover": "#e8e8ed",
+      "pressed": "#dcdce2",
+      "text": "#18181c",
+      "text_dim": "#60606a",
+      "text_faint": "#9696a0",
+      "icon": "#3c3c44",
+      "accent": "#6c5ce7",
+      "accent_soft": "rgba(108, 92, 231, 0.1412)",
+      "accent_border": "rgba(108, 92, 231, 0.4706)",
+      "accent_text": "#5040c8",
+      "separator": "#e2e2e8",
+      "shadow": "rgba(0, 0, 0, 0.1961)",
+      "primary_bg": "#141418",
+      "primary_text": "#fafafc",
+      "danger": "#d23c3c",
+      "warning": "#be8214",
+      "radius_sm": 6.0,
+      "radius": 8.0,
+      "radius_lg": 12.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#282828",
+      "histogram_level": 240,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(108, 92, 231, 0.1412)",
+      "knob_outline": "#60606a"
+    },
+    {
+      "id": "classic",
+      "kind": "Classic",
+      "label": "Classic",
+      "family": "Desktop Native & Retro",
+      "description": "Windows-2000-era warm gray (#d4d0c8) 3D bevels, 0 px square corners, navy (#0a246a) selection, beveled slider thumb.",
+      "dark": false,
+      "pro": false,
+      "bevel": true,
+      "round_chips": false,
+      "chrome": "#d4d0c8",
+      "canvas": "#808080",
+      "canvas_dot": "#808080",
+      "dock": "#d4d0c8",
+      "card": "#d4d0c8",
+      "card_border": "#808080",
+      "field": "#ffffff",
+      "field_border": "#808080",
+      "hover": "#e2ded6",
+      "pressed": "#bebab2",
+      "text": "#000000",
+      "text_dim": "#404040",
+      "text_faint": "#808080",
+      "icon": "#000000",
+      "accent": "#0a246a",
+      "accent_soft": "#0a246a",
+      "accent_border": "#0a246a",
+      "accent_text": "#ffffff",
+      "separator": "#808080",
+      "shadow": "rgba(0, 0, 0, 0.0)",
+      "primary_bg": "#d4d0c8",
+      "primary_text": "#000000",
+      "danger": "#a00000",
+      "warning": "#806000",
+      "radius_sm": 0.0,
+      "radius": 0.0,
+      "radius_lg": 0.0,
+      "tab_strip": "#d4d0c8",
+      "row_selected": "#0a246a",
+      "histogram_bg": "#282828",
+      "histogram_level": 240,
+      "caption_close": "#c42b1c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "#0a246a",
+      "knob_outline": "#404040"
+    },
+    {
+      "id": "solarizedDark",
+      "kind": "SolarizedDark",
+      "label": "Solarized Dark",
+      "family": "Low-Contrast & Palette",
+      "description": "Ethan Schoonover's Solarized palette on the Studio layout: base03 (#002b36) canvas, base02 (#073642) panels, base0 (#839496) text, Solarized blue (#268bd2) accent.",
+      "dark": true,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#073642",
+      "canvas": "#002b36",
+      "canvas_dot": "#0a3d4a",
+      "dock": "#00252f",
+      "card": "#073642",
+      "card_border": "#00252f",
+      "field": "#00252f",
+      "field_border": "#15505f",
+      "hover": "#0e4a5a",
+      "pressed": "#12596b",
+      "text": "#839496",
+      "text_dim": "#657b83",
+      "text_faint": "#586e75",
+      "icon": "#93a1a1",
+      "accent": "#268bd2",
+      "accent_soft": "rgba(38, 139, 210, 0.1804)",
+      "accent_border": "rgba(38, 139, 210, 0.4706)",
+      "accent_text": "#fdf6e3",
+      "separator": "#00252f",
+      "shadow": "rgba(0, 0, 0, 0.5882)",
+      "primary_bg": "#268bd2",
+      "primary_text": "#fdf6e3",
+      "danger": "#dc322f",
+      "warning": "#b58900",
+      "radius_sm": 6.0,
+      "radius": 8.0,
+      "radius_lg": 12.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#002b36",
+      "histogram_level": 225,
+      "caption_close": "#dc322f",
+      "caption_close_text": "#fdf6e3",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(38, 139, 210, 0.1804)",
+      "knob_outline": "none"
+    },
+    {
+      "id": "adwaita",
+      "kind": "Adwaita",
+      "label": "Adwaita (Light)",
+      "family": "Desktop Native & Retro",
+      "description": "GNOME libadwaita light palette on the Studio layout: white header bar and cards on #ebebed dock, GNOME blue (#3584e4) accent, 6/9/12 px radii, neutral close button.",
+      "dark": false,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#ffffff",
+      "canvas": "#dededf",
+      "canvas_dot": "#dededf",
+      "dock": "#ebebed",
+      "card": "#ffffff",
+      "card_border": "#dadadd",
+      "field": "#ebebed",
+      "field_border": "#dadadd",
+      "hover": "#e2e2e5",
+      "pressed": "#d4d4d8",
+      "text": "#323236",
+      "text_dim": "#646468",
+      "text_faint": "#9b9ba0",
+      "icon": "#38383c",
+      "accent": "#3584e4",
+      "accent_soft": "rgba(53, 132, 228, 0.1569)",
+      "accent_border": "rgba(53, 132, 228, 0.5098)",
+      "accent_text": "#1c71d8",
+      "separator": "#dedee1",
+      "shadow": "rgba(0, 0, 0, 0.1765)",
+      "primary_bg": "#3584e4",
+      "primary_text": "#ffffff",
+      "danger": "#c01c28",
+      "warning": "#9c6e03",
+      "radius_sm": 6.0,
+      "radius": 9.0,
+      "radius_lg": 12.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#282828",
+      "histogram_level": 240,
+      "caption_close": "#d4d4d8",
+      "caption_close_text": "#323236",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(53, 132, 228, 0.1569)",
+      "knob_outline": "#646468"
+    },
+    {
+      "id": "adwaitaDark",
+      "kind": "AdwaitaDark",
+      "label": "Adwaita (Dark)",
+      "family": "Desktop Native & Retro",
+      "description": "GNOME libadwaita dark palette on the Studio layout: #2e2e32 header, #36363a cards, GNOME blue (#3584e4) accent, 6/9/12 px radii.",
+      "dark": true,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#2e2e32",
+      "canvas": "#1d1d20",
+      "canvas_dot": "#1d1d20",
+      "dock": "#222226",
+      "card": "#36363a",
+      "card_border": "#404044",
+      "field": "#404044",
+      "field_border": "#4c4c50",
+      "hover": "#48484c",
+      "pressed": "#56565a",
+      "text": "#ffffff",
+      "text_dim": "#c0c0c2",
+      "text_faint": "#919194",
+      "icon": "#ebebed",
+      "accent": "#3584e4",
+      "accent_soft": "rgba(53, 132, 228, 0.2353)",
+      "accent_border": "rgba(120, 174, 237, 0.549)",
+      "accent_text": "#78aeed",
+      "separator": "#18181b",
+      "shadow": "rgba(0, 0, 0, 0.549)",
+      "primary_bg": "#3584e4",
+      "primary_text": "#ffffff",
+      "danger": "#ff7b63",
+      "warning": "#f8e45c",
+      "radius_sm": 6.0,
+      "radius": 9.0,
+      "radius_lg": 12.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#1d1d20",
+      "histogram_level": 225,
+      "caption_close": "#48484c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(53, 132, 228, 0.2353)",
+      "knob_outline": "none"
+    },
+    {
+      "id": "breezeLight",
+      "kind": "BreezeLight",
+      "label": "Breeze Light",
+      "family": "Desktop Native & Retro",
+      "description": "KDE Plasma Breeze Light adaptation on the Studio layout: cool light blue-gray surfaces, Breeze blue (#3aace8) accent, 5 px radii, 4.5:1 contrast-hardened text.",
+      "dark": false,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#dbdee2",
+      "canvas": "#dbdee2",
+      "canvas_dot": "#dbdee2",
+      "dock": "#e0e3e7",
+      "card": "#eceef1",
+      "card_border": "#cbd0d5",
+      "field": "#f9fafc",
+      "field_border": "#b8bfc6",
+      "hover": "#e2e6eb",
+      "pressed": "#d0d6dd",
+      "text": "#21252a",
+      "text_dim": "#363f48",
+      "text_faint": "#515a64",
+      "icon": "#343a40",
+      "accent": "#3aace8",
+      "accent_soft": "rgba(58, 172, 232, 0.1882)",
+      "accent_border": "rgba(58, 172, 232, 0.6667)",
+      "accent_text": "#1e5e88",
+      "separator": "#d6dade",
+      "shadow": "rgba(0, 0, 0, 0.1765)",
+      "primary_bg": "#237ab4",
+      "primary_text": "#ffffff",
+      "danger": "#aa3240",
+      "warning": "#994800",
+      "radius_sm": 5.0,
+      "radius": 5.0,
+      "radius_lg": 6.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#21252a",
+      "histogram_level": 240,
+      "caption_close": "#d5333c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(58, 172, 232, 0.1882)",
+      "knob_outline": "#363f48"
+    },
+    {
+      "id": "breezeDark",
+      "kind": "BreezeDark",
+      "label": "Breeze Dark",
+      "family": "Desktop Native & Retro",
+      "description": "KDE Plasma Breeze Dark adaptation on the Studio layout: cool dark blue-gray surfaces (#111418 canvas to #262a30 chrome), Breeze blue accent, 5 px radii.",
+      "dark": true,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#262a30",
+      "canvas": "#111418",
+      "canvas_dot": "#111418",
+      "dock": "#1a1d22",
+      "card": "#1d2126",
+      "card_border": "#34383d",
+      "field": "#262a30",
+      "field_border": "#44494f",
+      "hover": "#32363b",
+      "pressed": "#3a3f45",
+      "text": "#fafbfd",
+      "text_dim": "#c8ced5",
+      "text_faint": "#a4aab1",
+      "icon": "#eceef0",
+      "accent": "#3aace8",
+      "accent_soft": "rgba(58, 172, 232, 0.1569)",
+      "accent_border": "rgba(58, 172, 232, 0.6275)",
+      "accent_text": "#50b8ee",
+      "separator": "#2e3236",
+      "shadow": "rgba(0, 0, 0, 0.5882)",
+      "primary_bg": "#1e76b0",
+      "primary_text": "#ffffff",
+      "danger": "#e36f7b",
+      "warning": "#f47806",
+      "radius_sm": 5.0,
+      "radius": 5.0,
+      "radius_lg": 6.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#111418",
+      "histogram_level": 225,
+      "caption_close": "#d5333c",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.4314)",
+      "field_selection": "rgba(58, 172, 232, 0.1569)",
+      "knob_outline": "none"
+    },
+    {
+      "id": "softDark",
+      "kind": "SoftDark",
+      "label": "Soft Dark",
+      "family": "Low-Contrast & Palette",
+      "description": "Low-contrast dark on the Studio layout: muted violet-gray surfaces (never near-black), softened off-white text, periwinkle (#8a9ae8) accent, generous 7/10/14 px radii.",
+      "dark": true,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#3a3a44",
+      "canvas": "#282830",
+      "canvas_dot": "#282830",
+      "dock": "#2f2f38",
+      "card": "#363640",
+      "card_border": "#464652",
+      "field": "#40404b",
+      "field_border": "#545462",
+      "hover": "#444450",
+      "pressed": "#4a4a58",
+      "text": "#eeeef6",
+      "text_dim": "#d4d4e0",
+      "text_faint": "#bebece",
+      "icon": "#d6d6e2",
+      "accent": "#8a9ae8",
+      "accent_soft": "rgba(138, 154, 232, 0.1882)",
+      "accent_border": "rgba(138, 154, 232, 0.5882)",
+      "accent_text": "#bec8fc",
+      "separator": "#24242c",
+      "shadow": "rgba(0, 0, 0, 0.4314)",
+      "primary_bg": "#5668c4",
+      "primary_text": "#ffffff",
+      "danger": "#faa0ac",
+      "warning": "#f0c882",
+      "radius_sm": 7.0,
+      "radius": 10.0,
+      "radius_lg": 14.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#282830",
+      "histogram_level": 220,
+      "caption_close": "#c84856",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.3922)",
+      "field_selection": "rgba(138, 154, 232, 0.1882)",
+      "knob_outline": "none"
+    },
+    {
+      "id": "softLight",
+      "kind": "SoftLight",
+      "label": "Soft Light",
+      "family": "Low-Contrast & Palette",
+      "description": "Low-contrast light counterpart: pale violet-gray surfaces, softened dark-violet text (#2c2a38), periwinkle (#6e80d8) accent, 7/10/14 px radii.",
+      "dark": false,
+      "pro": false,
+      "bevel": false,
+      "round_chips": true,
+      "chrome": "#e8e6ec",
+      "canvas": "#dad8e0",
+      "canvas_dot": "#dad8e0",
+      "dock": "#e2e0e7",
+      "card": "#f0eef3",
+      "card_border": "#d0cdd7",
+      "field": "#faf9fc",
+      "field_border": "#bebbc9",
+      "hover": "#e4e2ea",
+      "pressed": "#d4d1dd",
+      "text": "#2c2a38",
+      "text_dim": "#3e3c4c",
+      "text_faint": "#504e60",
+      "icon": "#403e50",
+      "accent": "#6e80d8",
+      "accent_soft": "rgba(110, 128, 216, 0.1725)",
+      "accent_border": "rgba(110, 128, 216, 0.6667)",
+      "accent_text": "#2e3a92",
+      "separator": "#d2cfda",
+      "shadow": "rgba(0, 0, 0, 0.1569)",
+      "primary_bg": "#5062be",
+      "primary_text": "#ffffff",
+      "danger": "#a62c3e",
+      "warning": "#8c4800",
+      "radius_sm": 7.0,
+      "radius": 10.0,
+      "radius_lg": 14.0,
+      "tab_strip": "transparent",
+      "row_selected": "transparent",
+      "histogram_bg": "#2c2a38",
+      "histogram_level": 240,
+      "caption_close": "#c83c48",
+      "caption_close_text": "#ffffff",
+      "scrim": "rgba(0, 0, 0, 0.3529)",
+      "field_selection": "rgba(110, 128, 216, 0.1725)",
+      "knob_outline": "#3e3c4c"
+    }
+  ],
+  "layerLabelColors": [
+    {
+      "id": "red",
+      "label": "Red",
+      "swatch": "#fc5d5b",
+      "eye": "#9f2f30",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "orange",
+      "label": "Orange",
+      "swatch": "#f79744",
+      "eye": "#934f0c",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "yellow",
+      "label": "Yellow",
+      "swatch": "#dcd64b",
+      "eye": "#99780c",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "green",
+      "label": "Green",
+      "swatch": "#85dc6a",
+      "eye": "#4e712e",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "seafoam",
+      "label": "Seafoam",
+      "swatch": "#1c8488",
+      "eye": "#0b544f",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "blue",
+      "label": "Blue",
+      "swatch": "#78adf6",
+      "eye": "#415b87",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "indigo",
+      "label": "Indigo",
+      "swatch": "#544be7",
+      "eye": "#36348e",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "magenta",
+      "label": "Magenta",
+      "swatch": "#cc1a7e",
+      "eye": "#981b51",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "fuchsia",
+      "label": "Fuchsia",
+      "swatch": "#b014c0",
+      "eye": "#710f74",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "violet",
+      "label": "Violet",
+      "swatch": "#9176d5",
+      "eye": "#5d3f8e",
+      "icon": "#e2e2e2"
+    },
+    {
+      "id": "gray",
+      "label": "Gray",
+      "swatch": "#9c9c9c",
+      "eye": "#575757",
+      "icon": "#e2e2e2"
+    }
+  ],
+  "toolSections": [
+    {
+      "section": "Move & Artboards",
+      "slots": [
+        [
+          {
+            "id": "Move",
+            "label": "Move Tool",
+            "icon": "move",
+            "key": "V"
+          },
+          {
+            "id": "Artboard",
+            "label": "Artboard Tool",
+            "icon": "artboard",
+            "key": "V"
+          }
+        ]
+      ]
+    },
+    {
+      "section": "Selection, Crop & Measurement",
+      "slots": [
+        [
+          {
+            "id": "RectMarquee",
+            "label": "Rectangular Marquee Tool",
+            "icon": "square-dashed",
+            "key": "M"
+          },
+          {
+            "id": "EllipseMarquee",
+            "label": "Elliptical Marquee Tool",
+            "icon": "ellipse-dashed",
+            "key": "M"
+          },
+          {
+            "id": "SingleRowMarquee",
+            "label": "Single Row Marquee Tool",
+            "icon": "marquee-row",
+            "key": ""
+          },
+          {
+            "id": "SingleColumnMarquee",
+            "label": "Single Column Marquee Tool",
+            "icon": "marquee-column",
+            "key": ""
+          }
+        ],
+        [
+          {
+            "id": "Lasso",
+            "label": "Lasso Tool",
+            "icon": "lasso",
+            "key": "L"
+          },
+          {
+            "id": "PolygonLasso",
+            "label": "Polygonal Lasso Tool",
+            "icon": "pentagon",
+            "key": "L"
+          },
+          {
+            "id": "MagneticLasso",
+            "label": "Magnetic Lasso Tool",
+            "icon": "lasso-magnetic",
+            "key": "L"
+          }
+        ],
+        [
+          {
+            "id": "ObjectSelection",
+            "label": "Object Selection Tool",
+            "icon": "square-dashed-mouse-pointer",
+            "key": "W"
+          },
+          {
+            "id": "QuickSelection",
+            "label": "Quick Selection Tool",
+            "icon": "quick-selection",
+            "key": "W"
+          },
+          {
+            "id": "MagicWand",
+            "label": "Magic Wand Tool",
+            "icon": "wand-sparkles",
+            "key": "W"
+          }
+        ],
+        [
+          {
+            "id": "Crop",
+            "label": "Crop Tool",
+            "icon": "crop",
+            "key": "C"
+          },
+          {
+            "id": "PerspectiveCrop",
+            "label": "Perspective Crop Tool",
+            "icon": "perspective-crop",
+            "key": "C"
+          },
+          {
+            "id": "Slice",
+            "label": "Slice Tool",
+            "icon": "slice-knife",
+            "key": "C"
+          },
+          {
+            "id": "SliceSelect",
+            "label": "Slice Select Tool",
+            "icon": "slice-select",
+            "key": "C"
+          }
+        ],
+        [
+          {
+            "id": "Frame",
+            "label": "Frame Tool",
+            "icon": "frame-placeholder",
+            "key": "K"
+          }
+        ],
+        [
+          {
+            "id": "Eyedropper",
+            "label": "Eyedropper Tool",
+            "icon": "pipette",
+            "key": "I"
+          },
+          {
+            "id": "ColorSampler",
+            "label": "Color Sampler Tool",
+            "icon": "sampler",
+            "key": "I"
+          },
+          {
+            "id": "Ruler",
+            "label": "Ruler Tool",
+            "icon": "ruler",
+            "key": "I"
+          },
+          {
+            "id": "Note",
+            "label": "Note Tool",
+            "icon": "message-square",
+            "key": "I"
+          },
+          {
+            "id": "Count",
+            "label": "Count Tool",
+            "icon": "circle-dot",
+            "key": "I"
+          }
+        ]
+      ]
+    },
+    {
+      "section": "Retouching & Painting",
+      "slots": [
+        [
+          {
+            "id": "Remove",
+            "label": "Remove Tool",
+            "icon": "bandage-sparkle",
+            "key": "J"
+          },
+          {
+            "id": "SpotHealing",
+            "label": "Spot Healing Brush Tool",
+            "icon": "bandage",
+            "key": "J"
+          },
+          {
+            "id": "Healing",
+            "label": "Healing Brush Tool",
+            "icon": "bandage",
+            "key": "J"
+          },
+          {
+            "id": "Patch",
+            "label": "Patch Tool",
+            "icon": "lasso-select",
+            "key": "J"
+          },
+          {
+            "id": "ContentAwareMove",
+            "label": "Content-Aware Move Tool",
+            "icon": "arrow-left-right",
+            "key": "J"
+          },
+          {
+            "id": "RedEye",
+            "label": "Red Eye Tool",
+            "icon": "eye",
+            "key": "J"
+          }
+        ],
+        [
+          {
+            "id": "Brush",
+            "label": "Brush Tool",
+            "icon": "brush",
+            "key": "B"
+          },
+          {
+            "id": "Pencil",
+            "label": "Pencil Tool",
+            "icon": "pencil",
+            "key": "B"
+          },
+          {
+            "id": "MixerBrush",
+            "label": "Mixer Brush Tool",
+            "icon": "palette",
+            "key": "B"
+          },
+          {
+            "id": "ColorReplacement",
+            "label": "Color Replacement Tool",
+            "icon": "brush-replace",
+            "key": "B"
+          }
+        ],
+        [
+          {
+            "id": "CloneStamp",
+            "label": "Clone Stamp Tool",
+            "icon": "stamp",
+            "key": "S"
+          },
+          {
+            "id": "PatternStamp",
+            "label": "Pattern Stamp Tool",
+            "icon": "grid-3x3",
+            "key": "S"
+          }
+        ],
+        [
+          {
+            "id": "HistoryBrush",
+            "label": "History Brush Tool",
+            "icon": "clock",
+            "key": "Y"
+          },
+          {
+            "id": "ArtHistoryBrush",
+            "label": "Art History Brush Tool",
+            "icon": "sparkles",
+            "key": "Y"
+          }
+        ],
+        [
+          {
+            "id": "Eraser",
+            "label": "Eraser Tool",
+            "icon": "eraser",
+            "key": "E"
+          },
+          {
+            "id": "BackgroundEraser",
+            "label": "Background Eraser Tool",
+            "icon": "eraser-background",
+            "key": "E"
+          },
+          {
+            "id": "MagicEraser",
+            "label": "Magic Eraser Tool",
+            "icon": "eraser-magic",
+            "key": "E"
+          }
+        ],
+        [
+          {
+            "id": "Gradient",
+            "label": "Gradient Tool",
+            "icon": "gradient",
+            "key": "G"
+          },
+          {
+            "id": "PaintBucket",
+            "label": "Paint Bucket Tool",
+            "icon": "paint-bucket",
+            "key": "G"
+          }
+        ],
+        [
+          {
+            "id": "Blur",
+            "label": "Blur Tool",
+            "icon": "droplet",
+            "key": ""
+          },
+          {
+            "id": "Sharpen",
+            "label": "Sharpen Tool",
+            "icon": "triangle",
+            "key": ""
+          },
+          {
+            "id": "Smudge",
+            "label": "Smudge Tool",
+            "icon": "pointer",
+            "key": ""
+          }
+        ],
+        [
+          {
+            "id": "Dodge",
+            "label": "Dodge Tool",
+            "icon": "lollipop",
+            "key": "O"
+          },
+          {
+            "id": "Burn",
+            "label": "Burn Tool",
+            "icon": "flame",
+            "key": "O"
+          },
+          {
+            "id": "Sponge",
+            "label": "Sponge Tool",
+            "icon": "cloud",
+            "key": "O"
+          }
+        ]
+      ]
+    },
+    {
+      "section": "Vector, Type & Shapes",
+      "slots": [
+        [
+          {
+            "id": "Pen",
+            "label": "Pen Tool",
+            "icon": "pen-tool",
+            "key": "P"
+          },
+          {
+            "id": "FreeformPen",
+            "label": "Freeform Pen Tool",
+            "icon": "pen-freeform",
+            "key": "P"
+          },
+          {
+            "id": "CurvaturePen",
+            "label": "Curvature Pen Tool",
+            "icon": "pen-curvature",
+            "key": "P"
+          },
+          {
+            "id": "AddAnchorPoint",
+            "label": "Add Anchor Point Tool",
+            "icon": "pen-add-anchor",
+            "key": "P"
+          },
+          {
+            "id": "DeleteAnchorPoint",
+            "label": "Delete Anchor Point Tool",
+            "icon": "pen-delete-anchor",
+            "key": "P"
+          },
+          {
+            "id": "ConvertPoint",
+            "label": "Convert Point Tool",
+            "icon": "convert-point",
+            "key": "P"
+          }
+        ],
+        [
+          {
+            "id": "Type",
+            "label": "Horizontal Type Tool",
+            "icon": "type",
+            "key": "T"
+          },
+          {
+            "id": "VerticalType",
+            "label": "Vertical Type Tool",
+            "icon": "type",
+            "key": "T"
+          },
+          {
+            "id": "VerticalTypeMask",
+            "label": "Vertical Type Mask Tool",
+            "icon": "type-mask-vertical",
+            "key": "T"
+          },
+          {
+            "id": "HorizontalTypeMask",
+            "label": "Horizontal Type Mask Tool",
+            "icon": "type-mask",
+            "key": "T"
+          }
+        ],
+        [
+          {
+            "id": "PathSelection",
+            "label": "Path Selection Tool",
+            "icon": "mouse-pointer-2",
+            "key": "A"
+          },
+          {
+            "id": "DirectSelection",
+            "label": "Direct Selection Tool",
+            "icon": "direct-select",
+            "key": "A"
+          }
+        ],
+        [
+          {
+            "id": "Rectangle",
+            "label": "Rectangle Tool",
+            "icon": "rectangle-horizontal",
+            "key": "U"
+          },
+          {
+            "id": "EllipseShape",
+            "label": "Ellipse Tool",
+            "icon": "circle",
+            "key": "U"
+          },
+          {
+            "id": "Triangle",
+            "label": "Triangle Tool",
+            "icon": "triangle",
+            "key": "U"
+          },
+          {
+            "id": "Polygon",
+            "label": "Polygon Tool",
+            "icon": "pentagon",
+            "key": "U"
+          },
+          {
+            "id": "Line",
+            "label": "Line Tool",
+            "icon": "slash",
+            "key": "U"
+          },
+          {
+            "id": "CustomShape",
+            "label": "Custom Shape Tool",
+            "icon": "cloud",
+            "key": "U"
+          }
+        ]
+      ]
+    },
+    {
+      "section": "Navigation",
+      "slots": [
+        [
+          {
+            "id": "Hand",
+            "label": "Hand Tool",
+            "icon": "hand",
+            "key": "H"
+          },
+          {
+            "id": "RotateView",
+            "label": "Rotate View Tool",
+            "icon": "compass",
+            "key": "R"
+          }
+        ],
+        [
+          {
+            "id": "Zoom",
+            "label": "Zoom Tool",
+            "icon": "zoom-in",
+            "key": "Z"
+          }
+        ]
+      ]
+    }
+  ]
+};

@@ -7,10 +7,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api";
-import { fmtMs, fmtRelative, truncate } from "../lib/format";
+import { Link } from "../hooks/useRoute";
+import { classNames, fmtMs, fmtRelative, truncate } from "../lib/format";
 import { Markdown } from "../lib/markdown";
 import type { Chat, ChatIndex, ChatMessage } from "../types";
-import { Spinner, useToast } from "./ui";
+import { CheckToggle, Spinner, useToast } from "./ui";
 
 const KEYS = { chat: "cu:chat:id", model: "cu:chat:model", share: "cu:chat:share", shot: "cu:chat:screenshot" };
 
@@ -31,7 +32,15 @@ function remember(key: string, value: string | null) {
   }
 }
 
-export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose: () => void }) {
+export function ChatPanel({
+  sessionId,
+  prefill,
+  onClose,
+}: {
+  sessionId?: string;
+  prefill?: { prompt: string; seq: number } | null;
+  onClose: () => void;
+}) {
   const toast = useToast();
   const [index, setIndex] = useState<ChatIndex | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
@@ -44,6 +53,13 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
   const [showRecent, setShowRecent] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (prefill?.prompt) {
+      setDraft(prefill.prompt);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [prefill?.seq, prefill?.prompt]);
 
   const refreshIndex = useCallback(async () => {
     try {
@@ -223,19 +239,26 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
           {index ? (index.available ? "Antigravity" : "unavailable") : "…"}
         </span>
         <span className="spacer" />
-        <button className="btn sm ghost" onClick={newChat} disabled={!chat} title="Start a new chat">
+        <button type="button" className="craft-btn-compact btn sm ghost" onClick={newChat} disabled={!chat} title="Start a new chat">
           New
         </button>
         <button
-          className={`btn sm ghost ${showRecent ? "toggled" : ""}`}
+          type="button"
+          className={classNames("craft-btn-compact btn sm ghost", showRecent && "is-active toggled")}
           onClick={() => setShowRecent((v) => !v)}
           disabled={recent.length === 0}
           title="Recent chats (kept while the server runs)"
         >
           Recent{recent.length ? ` · ${recent.length}` : ""}
         </button>
-        <button className="btn sm ghost icon" onClick={onClose} aria-label="Close chat" title="Close">
-          ✕
+        <button
+          type="button"
+          className="craft-icon-btn craft-icon-btn-sm btn sm ghost icon"
+          onClick={onClose}
+          aria-label="Close chat"
+          title="Close"
+        >
+          <span className="craft-icon craft-icon-sm" data-craft-icon="x" aria-hidden="true" />
         </button>
       </div>
 
@@ -243,15 +266,21 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
         <div className="chat-recent">
           {recent.map((c) => (
             <div key={c.id} className={`chat-recent-row ${c.id === chat?.id ? "current" : ""}`}>
-              <button className="chat-recent-open" onClick={() => void openChat(c.id)} title={c.title ?? c.id}>
+              <button type="button" className="chat-recent-open" onClick={() => void openChat(c.id)} title={c.title ?? c.id}>
                 <span className="chat-recent-title">{c.title ?? "(untitled)"}</span>
                 <span className="dim">
                   {c.model_label} · {c.message_count} msgs · {fmtRelative(c.updated_at)}
                   {c.pending ? " · replying…" : ""}
                 </span>
               </button>
-              <button className="btn sm ghost icon" onClick={() => void removeChat(c.id)} aria-label="Delete chat" title="Delete">
-                🗑
+              <button
+                type="button"
+                className="craft-icon-btn craft-icon-btn-sm btn sm ghost icon"
+                onClick={() => void removeChat(c.id)}
+                aria-label="Delete chat"
+                title="Delete"
+              >
+                <span className="craft-icon craft-icon-sm" data-craft-icon="trash" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -283,7 +312,9 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
             ) : (
               <p>Open a session to let the chat see its timeline and screenshots.</p>
             )}
-            <p>The model can only answer — it cannot click, type, or change a session.</p>
+            <p>
+              The model can control computer use directly on your behalf: click, type, press keys, pause, resume, instruct the agent, or start new sessions.
+            </p>
           </div>
         )}
         {messages.map((m) => (
@@ -292,31 +323,53 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
       </div>
 
       <div className="chat-composer">
+        <div className="chat-mentions">
+          <button
+            type="button"
+            className="craft-btn-compact chat-mention-chip"
+            onClick={() => {
+              setDraft((d) => (d.startsWith("@Computer use") ? d : `@Computer use ${d}`.trimStart()));
+              inputRef.current?.focus();
+            }}
+            title="Direct the computer-use agent from chat"
+          >
+            @Computer use
+          </button>
+          <button
+            type="button"
+            className="craft-btn-compact chat-mention-chip"
+            onClick={() => {
+              setDraft((d) => (d ? d : "Create a daily schedule at 09:00 to "));
+              inputRef.current?.focus();
+            }}
+            title="Create a recurring schedule from chat"
+          >
+            @Schedule
+          </button>
+        </div>
         {sessionId && (
           <div className="chat-ctx">
-            <label className="check" title="Append the unseen part of this session's timeline to each message">
-              <input
-                type="checkbox"
-                checked={share}
-                onChange={(e) => {
-                  setShare(e.target.checked);
-                  remember(KEYS.share, e.target.checked ? "1" : "0");
-                }}
-              />
+            <CheckToggle
+              checked={share}
+              onChange={(checked) => {
+                setShare(checked);
+                remember(KEYS.share, checked ? "1" : "0");
+              }}
+              title="Append the unseen part of this session's timeline to each message"
+            >
               Share session <code>{sessionId.slice(0, 8)}</code>
-            </label>
+            </CheckToggle>
             {share && (
-              <label className="check" title="Also attach the latest screenshot (models that accept images only)">
-                <input
-                  type="checkbox"
-                  checked={screenshot}
-                  onChange={(e) => {
-                    setScreenshot(e.target.checked);
-                    remember(KEYS.shot, e.target.checked ? "1" : "0");
-                  }}
-                />
+              <CheckToggle
+                checked={screenshot}
+                onChange={(checked) => {
+                  setScreenshot(checked);
+                  remember(KEYS.shot, checked ? "1" : "0");
+                }}
+                title="Also attach the latest screenshot (models that accept images only)"
+              >
                 + screenshot
-              </label>
+              </CheckToggle>
             )}
           </div>
         )}
@@ -332,7 +385,7 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
         />
         <div className="chat-actions">
           <select
-            className="select chat-model"
+            className="select sm-select chat-model"
             value={effectiveModel}
             onChange={(e) => pickModel(e.target.value)}
             disabled={!index?.available || models.length === 0}
@@ -348,11 +401,11 @@ export function ChatPanel({ sessionId, onClose }: { sessionId?: string; onClose:
             ))}
           </select>
           {pending ? (
-            <button className="btn sm" onClick={() => void stop()} title="Stop generating">
+            <button type="button" className="craft-btn craft-btn-secondary btn sm" onClick={() => void stop()} title="Stop generating">
               <Spinner /> Stop
             </button>
           ) : (
-            <button className="btn sm primary" onClick={() => void send()} disabled={!canSend}>
+            <button type="button" className="craft-btn craft-btn-primary btn sm primary" onClick={() => void send()} disabled={!canSend}>
               Send
             </button>
           )}
@@ -374,8 +427,35 @@ function MessageView({ m }: { m: ChatMessage }) {
         </div>
       ) : (
         <>
+          {m.actions && m.actions.length > 0 && (
+            <div className="msg-actions">
+              {m.actions.map((act, i) => (
+                <div key={i} className={`msg-action ${act.ok ? "ok" : "failed"}`}>
+                  <span className="craft-icon craft-icon-sm msg-action-icon" data-craft-icon="sparkles" aria-hidden="true" />
+                  <span className="msg-action-summary">{act.summary}</span>
+                  {act.session_id && (
+                    <Link to={`/sessions/${act.session_id}`} className="msg-action-link" title={`Go to session ${act.session_id}`}>
+                      {act.session_id.slice(0, 8)} ↗
+                    </Link>
+                  )}
+                  <span className={`pill sm ${act.ok ? "ok" : "bad"}`} title={act.error ?? undefined}>
+                    {act.ok ? "done" : "failed"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {m.text && <Markdown text={m.text} className="msg-body" />}
-          {m.error && <div className="msg-error">{m.error === "cancelled" ? "Stopped." : m.error}</div>}
+          {m.error === "cancelled" ? (
+            <div className="stopped-task-banner">
+              <span className="stopped-task-dot" aria-hidden>
+                ■
+              </span>
+              <span>You stopped this task</span>
+            </div>
+          ) : (
+            m.error && <div className="msg-error">{m.error}</div>
+          )}
         </>
       )}
       <div className="meta dim">

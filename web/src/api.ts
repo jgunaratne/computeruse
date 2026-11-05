@@ -11,8 +11,20 @@ import type {
   DemoTask,
   EvalRun,
   Event,
+  Flow,
+  FlowCatalog,
+  FlowRun,
+  FlowRunSummary,
+  FlowSummary,
   MetricsSummary,
   ModelsResponse,
+  PermissionLevel,
+  PermissionsResponse,
+  Schedule,
+  ScheduleCatalog,
+  ScheduleRun,
+  ScheduleTargetKind,
+  ScheduleTrigger,
   Session,
   Suite,
   TimeseriesPoint,
@@ -95,6 +107,55 @@ export const api = {
     request<ChatSendResponse>(`/api/chat/${id}/messages`, { method: "POST", body: JSON.stringify(body) }),
   cancelChat: (id: string) => request<Chat>(`/api/chat/${id}/cancel`, { method: "POST" }),
   deleteChat: (id: string) => request<void>(`/api/chat/${id}`, { method: "DELETE" }),
+
+  flowCatalog: () => request<FlowCatalog>("/api/flows/catalog"),
+  flows: () => request<FlowSummary[]>("/api/flows"),
+  createFlow: (body: { name?: string; template?: string } = {}) =>
+    request<Flow>("/api/flows", { method: "POST", body: JSON.stringify(body) }),
+  flow: (id: string) => request<Flow>(`/api/flows/${id}`),
+  saveFlow: (flow: Flow) => request<Flow>(`/api/flows/${flow.id}`, { method: "PUT", body: JSON.stringify(flow) }),
+  deleteFlow: (id: string) => request<void>(`/api/flows/${id}`, { method: "DELETE" }),
+  startFlowRun: (id: string, body: { goal?: string } = {}) =>
+    request<FlowRun>(`/api/flows/${id}/runs`, { method: "POST", body: JSON.stringify(body) }),
+  flowRuns: (id: string) => request<FlowRunSummary[]>(`/api/flows/${id}/runs`),
+  /** `waitS > 0` long-polls until the run's version is newer than `after` (or it ends). */
+  flowRun: (runId: string, after = -1, waitS = 0, signal?: AbortSignal) =>
+    request<FlowRun>(`/api/flow-runs/${runId}${qs({ after, wait_s: waitS })}`, { signal }),
+  cancelFlowRun: (runId: string) => request<FlowRun>(`/api/flow-runs/${runId}/cancel`, { method: "POST" }),
+
+  scheduleCatalog: () => request<ScheduleCatalog>("/api/schedules/catalog"),
+  schedules: (status?: string) => request<Schedule[]>(`/api/schedules${qs({ status })}`),
+  schedule: (id: string) => request<Schedule>(`/api/schedules/${id}`),
+  createSchedule: (body: {
+    title: string;
+    plan: string;
+    target_kind?: ScheduleTargetKind;
+    backend?: string;
+    model?: string | null;
+    flow_id?: string | null;
+    demo_task?: string | null;
+    trigger?: Partial<ScheduleTrigger>;
+    status?: string;
+  }) => request<Schedule>("/api/schedules", { method: "POST", body: JSON.stringify(body) }),
+  updateSchedule: (id: string, body: Record<string, unknown>) =>
+    request<Schedule>(`/api/schedules/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  setScheduleStatus: (id: string, status: string, pauseReason?: string) =>
+    request<Schedule>(`/api/schedules/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, pause_reason: pauseReason }),
+    }),
+  markScheduleRead: (id: string) => request<Schedule>(`/api/schedules/${id}/read`, { method: "POST" }),
+  runScheduleNow: (id: string, wait = true) =>
+    request<{ run: ScheduleRun; schedule: Schedule }>(`/api/schedules/${id}/run${qs({ wait })}`, { method: "POST" }),
+  deleteSchedule: (id: string) => request<void>(`/api/schedules/${id}`, { method: "DELETE" }),
+
+  permissions: () => request<PermissionsResponse>("/api/permissions"),
+  updatePermissions: (body: {
+    updates?: Record<string, PermissionLevel>;
+    category_id?: string;
+    level?: PermissionLevel;
+    reset?: boolean;
+  }) => request<PermissionsResponse>("/api/permissions", { method: "PUT", body: JSON.stringify(body) }),
 };
 
 export function wsUrl(path: string): string {

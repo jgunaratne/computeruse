@@ -14,7 +14,16 @@ from enum import Enum
 from typing import Protocol
 from urllib.parse import urlparse
 
-from computeruse.computer.actions import Action, KeyPress, TypeText
+from computeruse.computer.actions import (
+    Action,
+    Click,
+    Drag,
+    KeyPress,
+    MouseDown,
+    MouseMove,
+    MouseUp,
+    TypeText,
+)
 
 
 class Decision(str, Enum):
@@ -168,6 +177,46 @@ class SensitiveText:
         return GuardrailResult.allow()
 
 
+class OperationPermissionRule:
+    """Enforce granular per-operation tool permissions (allow / ask / deny)."""
+
+    name = "operation_permission"
+
+    def __init__(self, permissions: dict[str, str] | None = None) -> None:
+        self.permissions = dict(permissions or {})
+
+    def _verdict(self, key: str, label: str) -> GuardrailResult:
+        lvl = self.permissions.get(key, "allow")
+        if lvl == "deny":
+            return GuardrailResult(Decision.BLOCK, self.name, f"{label} ({key}) is set to Never allow")
+        if lvl == "ask":
+            return GuardrailResult(Decision.REQUIRE_APPROVAL, self.name, f"{label} ({key}) requires approval")
+        return GuardrailResult.allow()
+
+    def check(self, action: Action, ctx: GuardrailContext) -> GuardrailResult:
+        if isinstance(action, (Click, MouseMove, MouseDown, MouseUp)):
+            return self._verdict("input::pointer_click", "Pointer click")
+        if isinstance(action, Drag):
+            return self._verdict("input::pointer_drag", "Click and drag")
+        if isinstance(action, KeyPress):
+            if "+" in action.text or action.text.lower() in ("escape", "return", "enter"):
+                res = self._verdict("input::keyboard_shortcuts", f"Key chord {action.text!r}")
+                if res.decision != Decision.ALLOW:
+                    return res
+            return GuardrailResult.allow()
+        if isinstance(action, TypeText):
+            if extract_domains(action.text):
+                res = self._verdict("browser::navigate_url", "URL navigation")
+                if res.decision != Decision.ALLOW:
+                    return res
+            if ctx.backend == "browser":
+                res = self._verdict("browser::fill_forms", "Form input")
+                if res.decision != Decision.ALLOW:
+                    return res
+            return self._verdict("input::keyboard_type", "Typing text")
+        return GuardrailResult.allow()
+
+
 class GuardrailPolicy:
     """Ordered rule set. BLOCK wins over REQUIRE_APPROVAL wins over ALLOW."""
 
@@ -186,10 +235,14 @@ class GuardrailPolicy:
 
     @classmethod
     def default(cls, *, blocked_keys: list[str], desktop_blocked_keys: list[str],
-                allowed_domains: list[str], blocked_domains: list[str], max_type_length: int) -> GuardrailPolicy:
-        return cls([
+                allowed_domains: list[str], blocked_domains: list[str], max_type_length: int,
+                operation_permissions: dict[str, str] | None = None) -> GuardrailPolicy:
+        rules: list[Guardrail] = [
             BlockedKeys(blocked_keys),
             BlockedKeys(desktop_blocked_keys, only_when_not_isolated=True),
             DomainPolicy(allowed_domains, blocked_domains),
             SensitiveText(max_type_length),
-        ])
+        ]
+        if operation_permissions:
+            rules.append(OperationPermissionRule(operation_permissions))
+        return cls(rules)

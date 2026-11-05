@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, wsUrl } from "../api";
 import { NewSessionForm } from "../components/NewSessionForm";
-import { Empty, Spinner, StatusPill, VerdictPill, useAsync, useNow, useToast } from "../components/ui";
+import { CheckToggle, Empty, Spinner, StatusPill, VerdictPill, useAsync, useNow, useToast } from "../components/ui";
 import { navigate } from "../hooks/useRoute";
 import { fmtCost, fmtDuration, fmtRelative, truncate } from "../lib/format";
 import type { Session } from "../types";
@@ -94,25 +94,39 @@ export function SessionsPage() {
           <p className="sub">Give the agent a task, then watch every screenshot, decision and action as it works.</p>
         </div>
         {meta.data && (
-          <button className="btn" id="btn-manual-session" onClick={() => void startManual()} disabled={!canManual || manualBusy} title={manualTitle}>
-            {manualBusy ? "Starting…" : "🔐 Sign in / browse manually"}
+          <button
+            type="button"
+            className="craft-btn craft-btn-secondary btn"
+            id="btn-manual-session"
+            onClick={() => void startManual()}
+            disabled={!canManual || manualBusy}
+            title={manualTitle}
+          >
+            {manualBusy ? (
+              "Starting…"
+            ) : (
+              <>
+                <span className="craft-icon craft-icon-sm" data-craft-icon="lock" aria-hidden="true" />
+                Sign in / browse manually
+              </>
+            )}
           </button>
         )}
       </div>
 
       {meta.data ? <NewSessionForm backends={meta.data.backends} config={meta.data.config} demos={meta.data.demos} /> : meta.error ? <div className="notice bad">Cannot reach the API: {meta.error}</div> : <Spinner />}
 
-      <div className="card" style={{ marginTop: 18 }}>
+      <div className="craft-panel card" style={{ marginTop: 18 }}>
         <div className="card-head">
           <div className="row">
             <h2>Recent sessions</h2>
             {activeCount > 0 && <span className="pill live">{activeCount} active</span>}
           </div>
           <div className="row">
-            <label className="check small">
-              <input type="checkbox" checked={hideEvals} onChange={(e) => setHideEvals(e.target.checked)} /> hide eval runs
-            </label>
-            <select className="select" style={{ width: 170, height: 28 }} value={backend} onChange={(e) => setBackend(e.target.value)} aria-label="Filter by computer">
+            <CheckToggle checked={hideEvals} onChange={setHideEvals} className="small">
+              hide eval runs
+            </CheckToggle>
+            <select className="select sm-select" style={{ width: 170 }} value={backend} onChange={(e) => setBackend(e.target.value)} aria-label="Filter by computer">
               <option value="">all computers</option>
               {(meta.data?.backends ?? []).map((b) => (
                 <option key={b.id} value={b.id}>

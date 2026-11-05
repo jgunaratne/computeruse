@@ -1,0 +1,24 @@
+name: Craft Design System
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  craft-ds:
+    name: Harness check and drift ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: jgunaratne/craft-design-system   # the design-system repo; or vendor its bin/ and lib/ under tools/craft-ds
+          path: .craft-ds
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # The kit is pinned and untouched; every doc, rule, skill and hook points at real things; both tools read the same words.
+      - run: python3 .craft-ds/bin/craft-ds check .
+      # Drift may not grow: fails only when a probe has more findings than the committed baseline.
+      - run: python3 .craft-ds/bin/craft-ds probe . --baseline .craft-ds-baseline.json

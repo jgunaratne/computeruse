@@ -3,18 +3,27 @@ import { useCallback, useEffect, useState } from "react";
 export type Route =
   | { name: "sessions" }
   | { name: "session"; id: string }
+  | { name: "agents"; id?: string }
+  | { name: "schedules"; id?: string }
   | { name: "metrics" }
   | { name: "evals"; runId?: string };
 
 export function parseRoute(pathname: string): Route {
   const parts = pathname.split("/").filter(Boolean);
   if (parts[0] === "sessions" && parts[1]) return { name: "session", id: parts[1] };
+  if (parts[0] === "agents") return { name: "agents", id: parts[1] };
+  if (parts[0] === "schedules") return { name: "schedules", id: parts[1] };
   if (parts[0] === "metrics") return { name: "metrics" };
   if (parts[0] === "evals") return { name: "evals", runId: parts[1] };
   return { name: "sessions" };
 }
 
 const NAV_EVENT = "cu:navigate";
+export const CHAT_PREFILL_EVENT = "cu:chat-prefill";
+
+export function openChatWithPrompt(prompt: string) {
+  window.dispatchEvent(new CustomEvent(CHAT_PREFILL_EVENT, { detail: { prompt } }));
+}
 
 export function navigate(path: string, replace = false) {
   if (replace) history.replaceState(null, "", path);

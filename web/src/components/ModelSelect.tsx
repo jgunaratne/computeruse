@@ -128,8 +128,8 @@ export function ModelSelect({
   const select = (
     <select
       id={id}
-      className="select"
-      style={compact ? { height: 28, width: 230 } : undefined}
+      className={compact ? "select sm-select" : "select"}
+      style={compact ? { width: 220 } : undefined}
       value={selectValue}
       onChange={(e) => pick(e.target.value)}
       aria-label="Model"
@@ -159,13 +159,21 @@ export function ModelSelect({
   const refreshButton = onRefresh && (
     <button
       type="button"
-      className="btn sm ghost"
+      className={compact ? "craft-icon-btn craft-icon-btn-sm btn sm ghost" : "craft-btn-compact btn sm ghost"}
       onClick={onRefresh}
       disabled={refreshing || discovery.status === "off"}
-      title={discovery.status === "off" ? "Discovery is disabled (COMPUTERUSE_MODEL_DISCOVERY=off)" : "Re-list the provider catalogues and re-verify access with a 1-token request per model"}
+      title={
+        discovery.status === "off"
+          ? "Discovery is disabled (COMPUTERUSE_MODEL_DISCOVERY=off)"
+          : "Re-list the provider catalogues and re-verify access with a 1-token request per model"
+      }
       aria-label="Refresh models"
     >
-      {refreshing ? <span className="spinner" aria-hidden /> : "↻"}
+      {refreshing ? (
+        <span className="spinner" aria-hidden />
+      ) : (
+        <span className="craft-icon craft-icon-sm" data-craft-icon="rotate-cw" aria-hidden="true" />
+      )}
       {compact ? "" : refreshing ? " Verifying…" : " Refresh"}
     </button>
   );
@@ -181,7 +189,9 @@ export function ModelSelect({
 
   return (
     <div className="field">
-      <label htmlFor={id}>Model</label>
+      <label htmlFor={id} className="craft-pro-colon">
+        Model
+      </label>
       <div className="row" style={{ gap: 8 }}>
         {select}
         {refreshButton}
@@ -206,9 +216,7 @@ export function ModelSelect({
           {selected.stage && selected.stage !== "GA" ? ` · ${selected.stage}` : ""}
         </span>
       )}
-      <span className={`small ${discovery.status === "error" || error ? "bad" : "muted"}`}>
-        {error ?? discoverySummary(discovery)}
-      </span>
+      <span className={`small ${discovery.status === "error" || error ? "bad" : "muted"}`}>{error ?? discoverySummary(discovery)}</span>
     </div>
   );
 }

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 import logging
 import time
 import uuid
@@ -30,6 +31,7 @@ from computeruse.agent.antigravity import (
     image_media,
 )
 from computeruse.agent.model import ModelError
+from computeruse.computer.actions import describe_action, parse_action
 from computeruse.telemetry.events import Event, EventType, SessionRecord, Usage
 
 if TYPE_CHECKING:
@@ -44,7 +46,52 @@ MAX_CONTEXT_LINES = 60  # newest timeline entries attached per message
 MAX_CONTEXT_CHARS = 6000
 MAX_LINE_CHARS = 300
 MAX_THINKING_CHARS = 4000
+MAX_TOOL_ROUNDS = 4
 CONTEXT_MARKER = "[Session context"
+
+CONTROL_COMMANDS = {
+    "pause": "pause",
+    "pause_session": "pause",
+    "resume": "resume",
+    "resume_session": "resume",
+    "step": "step",
+    "cancel": "cancel",
+    "stop": "cancel",
+    "stop_session": "cancel",
+    "instruct": "instruct",
+    "instruction": "instruct",
+    "budget": "budget",
+    "approve": "approve",
+    "reject": "reject",
+    "take_control": "take_control",
+    "release_control": "release_control",
+    "start_session": "start_session",
+    "create_session": "start_session",
+    "create_schedule": "create_schedule",
+    "schedule": "create_schedule",
+}
+
+COMPUTER_ACTIONS = {
+    "click": "left_click",
+    "left_click": "left_click",
+    "right_click": "right_click",
+    "middle_click": "middle_click",
+    "double_click": "double_click",
+    "triple_click": "triple_click",
+    "mouse_move": "mouse_move",
+    "type": "type",
+    "key": "key",
+    "press_hotkey": "key",
+    "hotkey": "key",
+    "scroll": "scroll",
+    "scroll_at": "scroll",
+    "drag": "left_click_drag",
+    "left_click_drag": "left_click_drag",
+    "left_mouse_down": "left_mouse_down",
+    "left_mouse_up": "left_mouse_up",
+    "wait": "wait",
+    "screenshot": "screenshot",
+}
 
 CHAT_SYSTEM = """\
 You are the assistant built into the computeruse console, a tool for running and supervising a \
@@ -53,22 +100,96 @@ clicking, typing and scrolling, one step at a time, under guardrails and budgets
 duration, cost), with a human who can pause, instruct, approve, take over the mouse and keyboard, \
 or cancel.
 
-You are a chat participant only. You have no tools: you cannot click, type, browse, run commands, \
-read files, or change a session. If asked to act, say so plainly and point to what the user can do \
-in the console (pause/resume, instruct the agent, raise the step budget, take control, cancel, start \
-a new session with a better task description).
+You can answer questions, give advice, supervise the running agent, and directly control the \
+computer and sessions on the user's behalf.
 
-Some user messages end with a block that starts with "[Session context". The console appends it \
-automatically — the user did not write it. It contains the session's timeline entries that are new \
-since your previous reply (steps taken, what the agent said, guardrail decisions, operator actions, \
-errors, the outcome) and sometimes the latest screenshot. Treat it as ground truth about the session: \
-refer to step numbers, quote error messages, describe what the screenshot shows. If the context does \
-not contain what the user asks about, say that instead of guessing. Without any context block, \
-answer from general knowledge.
+To perform actions, include one or more JSON command or action blocks in your reply. You may \
+include a brief sentence of narration before or alongside the blocks.
 
-Be concise and concrete. Use Markdown: short paragraphs, bullet lists where they help, fenced code \
-blocks for code, commands or exact text. No preamble, no sign-off.
+### Available Controls:
+
+1. Direct Computer Actions (interact directly with the active session's computer):
+   - {"action": "click", "coordinate": [x, y]} — click at coordinates
+   - {"action": "right_click", "coordinate": [x, y]} — right click at coordinates
+   - {"action": "double_click", "coordinate": [x, y]} — double click
+   - {"action": "triple_click", "coordinate": [x, y]} — triple click
+   - {"action": "mouse_move", "coordinate": [x, y]} — move mouse pointer
+   - {"action": "type", "text": "..."} — type text
+   - {"action": "key", "key": "Return"} — press a key or shortcut (e.g. "Return", "Escape", "ctrl+a", "BackSpace")
+   - {"action": "scroll", "coordinate": [x, y], "delta_x": 0, "delta_y": -100} — scroll at coordinates
+   - {"action": "drag", "start_coordinate": [x1, y1], "end_coordinate": [x2, y2]} — click and drag
+   - {"action": "wait", "duration": 1.0} — wait specified seconds
+   - {"action": "screenshot"} — take and inspect the latest screenshot
+   Coordinates must be within the display resolution (e.g. 1024×768 or 1280×800) given in the session context.
+
+2. Agent & Session Lifecycle:
+   - {"command": "pause"} — pause the running agent loop
+   - {"command": "resume"} — resume the agent loop
+   - {"command": "step"} — step the agent forward by 1 step
+   - {"command": "cancel"} — cancel/stop the session
+   - {"command": "instruct", "text": "..."} — provide steering instructions for the agent's next turn
+   - {"command": "budget", "max_steps": N} — adjust limits (max_steps, max_duration_s, max_cost_usd)
+   - {"command": "approve"} / {"command": "reject"} — approve or reject a pending approval
+   - {"command": "take_control"} / {"command": "release_control", "resume": true} — operator takeover
+
+3. Session Launch & Scheduled Automation:
+   - {"command": "start_session", "task": "...", "backend": "browser"} — launch a new session (backend: "browser" | "desktop" | "simulated")
+   - {"command": "create_schedule", "title": "...", "plan": "...", "target_kind": "antigravity_chat", "frequency": "daily", "time_of_day": "09:00"} — create a recurring or one-off scheduled task (target_kind: "antigravity_chat" | "session" | "flow"; frequency: "hourly" | "daily" | "weekly" | "monthly" | "once")
+
+### Interaction Protocol:
+- If asked to act, emit the corresponding command/action JSON.
+- If you execute computer actions, you will receive the execution results and updated screenshot in the next turn so you can observe the outcome.
+- When all actions are complete or when asked a general question, reply with your final explanation and no further action blocks.
+- Be concise, direct, and helpful. Use Markdown.
 """
+
+
+def extract_control_calls(text: str) -> list[dict[str, Any]]:
+    """Find command and computer action objects in the model reply."""
+    decoder = json.JSONDecoder()
+    calls: list[dict[str, Any]] = []
+    i = 0
+    while i < len(text):
+        if text[i] in "{[":
+            try:
+                obj, end = decoder.raw_decode(text, i)
+                i = end
+                items = obj if isinstance(obj, list) else [obj]
+                for item in items:
+                    if isinstance(item, dict):
+                        cmd = str(item.get("command", "")).lower()
+                        act = str(item.get("action", "")).lower()
+                        if cmd in CONTROL_COMMANDS:
+                            calls.append(item)
+                        elif act in COMPUTER_ACTIONS:
+                            calls.append(item)
+                continue
+            except ValueError:
+                pass
+        i += 1
+    return calls
+
+
+@dataclass
+class ChatActionExecution:
+    type: str  # "command" | "action"
+    name: str  # e.g. "click", "pause", "start_session"
+    params: dict[str, Any]
+    ok: bool
+    summary: str
+    error: str | None = None
+    session_id: str | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "type": self.type,
+            "name": self.name,
+            "params": self.params,
+            "ok": self.ok,
+            "summary": self.summary,
+            "error": self.error,
+            "session_id": self.session_id,
+        }
 
 
 class ChatError(Exception):
@@ -213,6 +334,7 @@ class ChatMessage:
     error: str | None = None
     pending: bool = False
     context: dict[str, Any] | None = None  # what the console attached to a user message
+    actions: list[ChatActionExecution] = field(default_factory=list)
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -221,6 +343,7 @@ class ChatMessage:
             "thinking": self.thinking[:MAX_THINKING_CHARS], "usage": self.usage.model_dump() if self.usage else None,
             "latency_ms": self.latency_ms, "stop_reason": self.stop_reason, "error": self.error,
             "pending": self.pending, "context": self.context,
+            "actions": [a.to_json() for a in self.actions],
         }
 
 
@@ -386,6 +509,12 @@ class ChatService:
                 raise ChatError(404, f"unknown session {session_id!r}")
             wire_text, media, context, last_seq = await self._with_context(chat, rec, text, target,
                                                                            screenshot=screenshot)
+        else:
+            active_runners = [r for r in self.orch.runners.values() if not r.record.status.terminal]
+            if active_runners:
+                active_info = ", ".join(f"session {r.record.id} ({r.record.backend}, {r.record.status.value}, {r.record.steps} steps)"
+                                        for r in active_runners)
+                wire_text = f"{text}\n\n[Active sessions on server: {active_info}]"
 
         now = time.time()
         user = ChatMessage(id=uuid.uuid4().hex[:12], role="user", text=text, created_at=now, context=context)
@@ -422,6 +551,193 @@ class ChatService:
             context["note"] = f"{model.label} does not accept images; screenshot not attached"
         return f"{text}\n\n{block}", media, context, last_seq
 
+    async def _execute_call(self, call: dict[str, Any], session_id: str | None
+                           ) -> tuple[ChatActionExecution, bytes | None, str | None]:
+        cmd_raw = str(call.get("command", "")).lower()
+        act_raw = str(call.get("action", "")).lower()
+
+        if cmd_raw in CONTROL_COMMANDS:
+            cmd = CONTROL_COMMANDS[cmd_raw]
+            if cmd == "start_session":
+                task = str(call.get("task", "")).strip()
+                if not task:
+                    return ChatActionExecution(
+                        type="command", name="start_session", params=call, ok=False,
+                        summary="start session", error="task description is required",
+                    ), None, None
+                backend = str(call.get("backend") or "browser").strip()
+                script = call.get("script")
+                model_name = call.get("model")
+                if not model_name:
+                    if script:
+                        model_name = "scripted"
+                    elif self.default_model():
+                        model_name = self.default_model().id
+                    else:
+                        model_name = self.orch.settings.model
+                overrides: dict[str, Any] = {}
+                if "max_steps" in call:
+                    try:
+                        overrides["max_steps"] = int(call["max_steps"])
+                    except (ValueError, TypeError):
+                        pass
+                if call.get("start_paused"):
+                    overrides["start_paused"] = True
+                try:
+                    rec = await self.orch.create_session(
+                        task=task, backend=backend, model=model_name,
+                        overrides=overrides or None, script=script,
+                    )
+                    return ChatActionExecution(
+                        type="command", name="start_session", params=call, ok=True,
+                        summary=f"started session {rec.id[:8]} ({backend}) for task: {_clip(task, 60)}",
+                        session_id=rec.id,
+                    ), None, rec.id
+                except Exception as e:
+                    return ChatActionExecution(
+                        type="command", name="start_session", params=call, ok=False,
+                        summary=f"start session ({backend})", error=str(e),
+                    ), None, None
+
+            if cmd == "create_schedule":
+                title = str(call.get("title") or call.get("task") or "Scheduled routine").strip()
+                plan = str(call.get("plan") or call.get("task") or title).strip()
+                target_kind = str(call.get("target_kind") or "antigravity_chat").strip()
+                backend = str(call.get("backend") or "simulated").strip()
+                trig = {
+                    "frequency": str(call.get("frequency") or "daily").lower(),
+                    "time_of_day": str(call.get("time_of_day") or "09:00"),
+                    "minute_of_hour": int(call.get("minute_of_hour") or 0),
+                    "days_of_week": call.get("days_of_week") or [1, 2, 3, 4, 5],
+                    "day_of_month": int(call.get("day_of_month") or 1),
+                    "condition": str(call.get("condition") or ""),
+                }
+                try:
+                    sched = self.orch.schedules.create(
+                        title=title, plan=plan, target_kind=target_kind, backend=backend, trigger=trig,
+                    )
+                    return ChatActionExecution(
+                        type="command", name="create_schedule", params=call, ok=True,
+                        summary=f"scheduled '{sched.title}' ({sched.to_summary()['trigger_summary']})",
+                    ), None, session_id
+                except Exception as e:
+                    return ChatActionExecution(
+                        type="command", name="create_schedule", params=call, ok=False,
+                        summary=f"schedule '{title}'", error=str(e),
+                    ), None, session_id
+
+            # Other control commands target a session
+            sid = call.get("session_id") or session_id
+            if not sid:
+                active = [r.record.id for r in self.orch.runners.values() if not r.record.status.terminal]
+                if len(active) == 1:
+                    sid = active[0]
+            if not sid:
+                return ChatActionExecution(
+                    type="command", name=cmd, params=call, ok=False,
+                    summary=f"{cmd} session", error="no session is active or specified",
+                ), None, None
+
+            try:
+                if cmd == "instruct":
+                    text = str(call.get("text", "")).strip()
+                    if not text:
+                        raise ValueError("instruction text is required")
+                    await self.orch.control(sid, "instruct", {"text": text})
+                    summary = f"instructed session {sid[:8]}: {_clip(text, 50)}"
+                elif cmd == "budget":
+                    budget_args = {k: call[k] for k in ("max_steps", "max_turns", "max_duration_s", "max_cost_usd") if k in call}
+                    if not budget_args:
+                        raise ValueError("budget: pass at least one limit (max_steps, max_cost_usd, etc.)")
+                    await self.orch.control(sid, "budget", budget_args)
+                    summary = f"updated budget for session {sid[:8]}: {', '.join(f'{k}={v}' for k, v in budget_args.items())}"
+                elif cmd in ("approve", "reject"):
+                    await self.orch.control(sid, cmd, {"approval_id": call.get("approval_id")})
+                    summary = f"{cmd}d approval for session {sid[:8]}"
+                elif cmd in ("pause", "resume", "step", "cancel", "take_control", "release_control"):
+                    await self.orch.control(sid, cmd, call)
+                    summary = f"{cmd} session {sid[:8]}"
+                else:
+                    raise ValueError(f"unknown command {cmd!r}")
+                return ChatActionExecution(
+                    type="command", name=cmd, params=call, ok=True,
+                    summary=summary, session_id=sid,
+                ), None, sid
+            except Exception as e:
+                return ChatActionExecution(
+                    type="command", name=cmd, params=call, ok=False,
+                    summary=f"{cmd} session {sid[:8]}", error=str(e), session_id=sid,
+                ), None, sid
+
+        if act_raw in COMPUTER_ACTIONS:
+            canonical_act = COMPUTER_ACTIONS[act_raw]
+            sid = call.get("session_id") or session_id
+            if not sid:
+                active = [r.record.id for r in self.orch.runners.values() if not r.record.status.terminal]
+                if len(active) == 1:
+                    sid = active[0]
+            if not sid:
+                return ChatActionExecution(
+                    type="action", name=act_raw, params=call, ok=False,
+                    summary=f"action {act_raw}", error="no session is active or specified",
+                ), None, None
+
+            runner = self.orch.runners.get(sid)
+            if runner is None or runner.record.status.terminal:
+                return ChatActionExecution(
+                    type="action", name=act_raw, params=call, ok=False,
+                    summary=f"action {act_raw}", error=f"session {sid[:8]} is not active", session_id=sid,
+                ), None, sid
+
+            action_dict = dict(call)
+            action_dict.pop("session_id", None)
+            action_dict.pop("command", None)
+            action_dict["action"] = canonical_act
+            if "hotkey" in action_dict and "key" not in action_dict:
+                action_dict["key"] = action_dict.pop("hotkey")
+
+            # Pause running agent if it is actively executing turns
+            if not runner._agent_idle:
+                await self.orch.control(sid, "pause", {})
+                for _ in range(25):
+                    if runner._agent_idle:
+                        break
+                    await asyncio.sleep(0.2)
+
+            try:
+                res = await self.orch.manual_action(sid, action_dict)
+                desc = res.get("description")
+                if not desc:
+                    try:
+                        desc = describe_action(parse_action(action_dict))
+                    except Exception:
+                        desc = canonical_act
+
+                # Capture latest screenshot
+                png_bytes: bytes | None = None
+                events = self.orch.events(sid)
+                fseq = latest_frame(events)
+                if fseq is not None:
+                    path = self.orch.store.frame_path(sid, fseq)
+                    if path and path.exists():
+                        png_bytes = await asyncio.to_thread(path.read_bytes)
+
+                return ChatActionExecution(
+                    type="action", name=canonical_act, params=call,
+                    ok=bool(res.get("ok", True)), summary=desc, error=res.get("error"),
+                    session_id=sid,
+                ), png_bytes, sid
+            except Exception as e:
+                return ChatActionExecution(
+                    type="action", name=canonical_act, params=call, ok=False,
+                    summary=f"action {canonical_act}", error=str(e), session_id=sid,
+                ), None, sid
+
+        return ChatActionExecution(
+            type="unknown", name="unknown", params=call, ok=False,
+            summary="unrecognized command or action", error="unrecognized call",
+        ), None, session_id
+
     async def _generate(self, chat: Chat, assistant: ChatMessage, text: str, media: list[dict[str, Any]],
                         model: AntigravityModel, session_id: str | None, last_seq: int | None) -> None:
         t0 = time.perf_counter()
@@ -429,22 +745,83 @@ class ChatService:
             if chat.conversation is None:
                 await self._start(chat, model, text)
             assert chat.conversation is not None
-            reply = await chat.conversation.send(text, media or None, model=model)
-            if reply.empty:
-                log.warning("chat %s: empty reply from %s; nudging once", chat.id, model.label)
-                reply = reply.merged(await chat.conversation.send(
-                    "Your reply was empty. Please answer the previous message.", model=model))
-            if reply.empty:
-                raise ModelError(f"Antigravity ({model.label}) returned no reply"
-                                 f"{' (stop reason ' + reply.stop_reason + ')' if reply.stop_reason else ''}")
-            assistant.text, assistant.thinking = reply.text.strip(), reply.thinking.strip()
-            assistant.usage, assistant.stop_reason = reply.usage, reply.stop_reason
-            if reply.generator and reply.generator != model.enum:
-                actual = find_model(self.models(), reply.generator)
-                assistant.model = actual.id if actual else reply.generator
-                assistant.model_label = actual.label if actual else reply.generator
-            if session_id is not None and last_seq is not None:
-                chat.seen_seq[session_id] = last_seq  # only once the model has actually seen it
+
+            current_text = text
+            current_media = media
+            accumulated_text: list[str] = []
+            accumulated_thinking: list[str] = []
+            executed_actions: list[ChatActionExecution] = []
+            current_session_id = session_id
+
+            for round_idx in range(MAX_TOOL_ROUNDS):
+                reply = await chat.conversation.send(current_text, current_media or None, model=model)
+                if reply.empty and round_idx == 0:
+                    log.warning("chat %s: empty reply from %s; nudging once", chat.id, model.label)
+                    reply = reply.merged(await chat.conversation.send(
+                        "Your reply was empty. Please answer the previous message.", model=model))
+                if reply.empty:
+                    if not accumulated_text and not executed_actions:
+                        raise ModelError(f"Antigravity ({model.label}) returned no reply"
+                                         f"{' (stop reason ' + reply.stop_reason + ')' if reply.stop_reason else ''}")
+                    break
+
+                if reply.text.strip():
+                    accumulated_text.append(reply.text.strip())
+                if reply.thinking.strip():
+                    accumulated_thinking.append(reply.thinking.strip())
+                if assistant.usage is None:
+                    assistant.usage = reply.usage
+                else:
+                    assistant.usage.add(reply.usage)
+                assistant.stop_reason = reply.stop_reason
+                if reply.generator and reply.generator != model.enum:
+                    actual = find_model(self.models(), reply.generator)
+                    assistant.model = actual.id if actual else reply.generator
+                    assistant.model_label = actual.label if actual else reply.generator
+
+                calls = extract_control_calls(reply.text)
+                if not calls:
+                    break
+
+                round_results: list[str] = []
+                latest_frame_png: bytes | None = None
+                for call in calls:
+                    exec_rec, frame_png, new_sid = await self._execute_call(call, current_session_id)
+                    executed_actions.append(exec_rec)
+                    if new_sid:
+                        current_session_id = new_sid
+                    if frame_png:
+                        latest_frame_png = frame_png
+                    status_text = "ok" if exec_rec.ok else f"failed: {exec_rec.error or 'error'}"
+                    round_results.append(f"- {exec_rec.summary}: {status_text}")
+
+                assistant.actions = list(executed_actions)
+                chat.updated_at = time.time()
+                chat.changed.set()
+
+                if round_idx == MAX_TOOL_ROUNDS - 1:
+                    break
+
+                feedback_lines = ["[Execution results:", *round_results]
+                feedback_media: list[dict[str, Any]] = []
+                if latest_frame_png and model.supports_images:
+                    caption = f"screenshot after action (session {current_session_id})"
+                    feedback_media.append(image_media(base64.b64encode(latest_frame_png).decode(), caption))
+                    feedback_lines.append(f"[screenshot attached: {caption}]")
+                feedback_lines.append("]")
+                current_text = "\n".join(feedback_lines)
+                current_media = feedback_media
+
+            assistant.text = "\n\n".join(accumulated_text)
+            assistant.thinking = "\n\n".join(accumulated_thinking)
+            assistant.actions = executed_actions
+
+            if current_session_id is not None:
+                events = self.orch.events(current_session_id)
+                if events:
+                    chat.seen_seq[current_session_id] = events[-1].seq
+                elif last_seq is not None:
+                    chat.seen_seq[current_session_id] = last_seq
         except asyncio.CancelledError:
             assistant.error = "cancelled"
             raise

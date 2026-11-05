@@ -1,0 +1,2970 @@
+/* ==========================================================================
+   Craft Design System (craft-ds) v0.16.0
+   Extracted from PhotoCraft (crates/ui-egui/src/theme.rs, widgets.rs, panels.rs)
+   Dual-licensed under Apache-2.0 OR MIT
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Bundled Typography (@font-face)
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/Inter-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../assets/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+   2. Global Primitives & Default Theme Tokens (Pro Medium Gray)
+   -------------------------------------------------------------------------- */
+:root {
+  --craft-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --craft-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --craft-font-scale: 1;
+
+  /* Spacing & Widget Metrics (from apply_theme & widgets.rs) */
+  --craft-space-xs: 4px;
+  --craft-space-sm: 6px;
+  --craft-space-md: 8px;
+  --craft-space-lg: 12px;
+  --craft-space-xl: 16px;
+  --craft-item-gap-x: 8px;
+  --craft-item-gap-y: 6px;
+  --craft-row-gap: 4px;
+  --craft-value-field-h: 24px;
+  --craft-text-field-h: 24px;
+  --craft-popup-arrow-w: 14px;
+  --craft-popup-slider-w: 160px;
+  --craft-checkbox-size: 14px;
+  --craft-toggle-w: 30px;
+  --craft-toggle-h: 17px;
+  --craft-slider-h: 18px;
+  --craft-slider-track-h: 3px;
+  --craft-slider-grad-h: 5px;
+  --craft-angle-dial-size: 42px;
+  --craft-panel-footer-h: 30px;
+  --craft-window-shadow: 0 10px 32px var(--craft-shadow);
+  --craft-popup-shadow: 0 6px 20px var(--craft-shadow);
+
+  /* Semantic Layer Label Swatch Palette (11 Adobe/PhotoCraft colors) */
+  --craft-label-red: #fc5d5b;
+  --craft-label-red-eye: #9f2f30;
+  --craft-label-orange: #f79744;
+  --craft-label-orange-eye: #934f0c;
+  --craft-label-yellow: #dcd64b;
+  --craft-label-yellow-eye: #99780c;
+  --craft-label-green: #85dc6a;
+  --craft-label-green-eye: #4e712e;
+  --craft-label-seafoam: #1c8488;
+  --craft-label-seafoam-eye: #0b544f;
+  --craft-label-blue: #78adf6;
+  --craft-label-blue-eye: #415b87;
+  --craft-label-indigo: #544be7;
+  --craft-label-indigo-eye: #36348e;
+  --craft-label-magenta: #cc1a7e;
+  --craft-label-magenta-eye: #981b51;
+  --craft-label-fuchsia: #b014c0;
+  --craft-label-fuchsia-eye: #710f74;
+  --craft-label-violet: #9176d5;
+  --craft-label-violet-eye: #5d3f8e;
+  --craft-label-gray: #9c9c9c;
+  --craft-label-gray-eye: #575757;
+}
+
+/* UI Font Size Multiplier (UiFontSize: Tiny 10/12, Small 1x, Medium 14/12, Large 16/12) */
+[data-craft-font-size="tiny"]   { --craft-font-scale: 0.833333; }
+[data-craft-font-size="small"]  { --craft-font-scale: 1; }
+[data-craft-font-size="medium"] { --craft-font-scale: 1.166667; }
+[data-craft-font-size="large"]  { --craft-font-scale: 1.333333; }
+
+
+/* --------------------------------------------------------------------------
+   3. Theme Definitions (All 14 ThemeKind Variants)
+   -------------------------------------------------------------------------- */
+:root, [data-craft-theme="proMedium"] {
+  /* Theme: Pro (Medium Gray) (ProMedium) */
+  --craft-chrome: #535353;
+  --craft-canvas: #282828;
+  --craft-canvas-dot: #282828;
+  --craft-dock: #424242;
+  --craft-card: #535353;
+  --craft-card-border: #424242;
+  --craft-field: #454545;
+  --craft-field-border: #686868;
+  --craft-hover: #626262;
+  --craft-pressed: #707070;
+  --craft-text: #eeeeee;
+  --craft-text-dim: #d4d4d4;
+  --craft-text-faint: #a0a0a0;
+  --craft-icon: #e2e2e2;
+  --craft-accent: #378ef0;
+  --craft-accent-soft: #6e6e6e;
+  --craft-accent-border: #378ef0;
+  --craft-accent-text: #ffffff;
+  --craft-separator: #3e3e3e;
+  --craft-shadow: rgba(0, 0, 0, 0.5882);
+  --craft-primary-bg: #378ef0;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #ec5b62;
+  --craft-warning: #e8b046;
+  --craft-radius-sm: 3px;
+  --craft-radius: 4px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: #4a4a4a;
+  --craft-row-selected: #6b6b6b;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: #606060;
+  --craft-knob-outline: #282828;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12px;
+  --craft-btn-height: 28px;
+  --craft-btn-radius: 14px;
+  --craft-titlebar-height: 32px;
+  --craft-optionsbar-height: 36px;
+  --craft-optionsbar-narrow-height: 30px;
+  --craft-statusbar-height: 24px;
+  --craft-statusbar-ctrl-height: 18px;
+  --craft-toolbar-width: 40px;
+  --craft-toolbar-btn-size: 30px;
+  --craft-rail-width: 36px;
+  --craft-rail-btn-size: 28px;
+  --craft-dock-width: 290px;
+  --craft-slider-knob-size: 12px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="pro"] {
+  /* Theme: Pro (Dark) (Pro) */
+  --craft-chrome: #323232;
+  --craft-canvas: #282828;
+  --craft-canvas-dot: #282828;
+  --craft-dock: #1e1e1e;
+  --craft-card: #323232;
+  --craft-card-border: #1e1e1e;
+  --craft-field: #242424;
+  --craft-field-border: #4a4a4a;
+  --craft-hover: #424242;
+  --craft-pressed: #4e4e4e;
+  --craft-text: #dedede;
+  --craft-text-dim: #b2b2b2;
+  --craft-text-faint: #808080;
+  --craft-icon: #c8c8c8;
+  --craft-accent: #378ef0;
+  --craft-accent-soft: #4e4e4e;
+  --craft-accent-border: #378ef0;
+  --craft-accent-text: #ffffff;
+  --craft-separator: #1e1e1e;
+  --craft-shadow: rgba(0, 0, 0, 0.5882);
+  --craft-primary-bg: #378ef0;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #ec5b62;
+  --craft-warning: #e8b046;
+  --craft-radius-sm: 3px;
+  --craft-radius: 4px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: #262626;
+  --craft-row-selected: #525252;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: #606060;
+  --craft-knob-outline: #282828;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12px;
+  --craft-btn-height: 28px;
+  --craft-btn-radius: 14px;
+  --craft-titlebar-height: 32px;
+  --craft-optionsbar-height: 36px;
+  --craft-optionsbar-narrow-height: 30px;
+  --craft-statusbar-height: 24px;
+  --craft-statusbar-ctrl-height: 18px;
+  --craft-toolbar-width: 40px;
+  --craft-toolbar-btn-size: 30px;
+  --craft-rail-width: 36px;
+  --craft-rail-btn-size: 28px;
+  --craft-dock-width: 290px;
+  --craft-slider-knob-size: 12px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="proLightGray"] {
+  /* Theme: Pro (Light Gray) (ProLightGray) */
+  --craft-chrome: #b8b8b8;
+  --craft-canvas: #a0a0a0;
+  --craft-canvas-dot: #a0a0a0;
+  --craft-dock: #a8a8a8;
+  --craft-card: #b8b8b8;
+  --craft-card-border: #a0a0a0;
+  --craft-field: #d6d6d6;
+  --craft-field-border: #8c8c8c;
+  --craft-hover: #c6c6c6;
+  --craft-pressed: #aaaaaa;
+  --craft-text: #141414;
+  --craft-text-dim: #343434;
+  --craft-text-faint: #606060;
+  --craft-icon: #262626;
+  --craft-accent: #378ef0;
+  --craft-accent-soft: #d0d0d0;
+  --craft-accent-border: #378ef0;
+  --craft-accent-text: #004296;
+  --craft-separator: #9e9e9e;
+  --craft-shadow: rgba(0, 0, 0, 0.2745);
+  --craft-primary-bg: #378ef0;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #ec5b62;
+  --craft-warning: #e8b046;
+  --craft-radius-sm: 3px;
+  --craft-radius: 4px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: #aaaaaa;
+  --craft-row-selected: #d4d4d4;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: #c9c9c9;
+  --craft-knob-outline: #282828;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12px;
+  --craft-btn-height: 28px;
+  --craft-btn-radius: 14px;
+  --craft-titlebar-height: 32px;
+  --craft-optionsbar-height: 36px;
+  --craft-optionsbar-narrow-height: 30px;
+  --craft-statusbar-height: 24px;
+  --craft-statusbar-ctrl-height: 18px;
+  --craft-toolbar-width: 40px;
+  --craft-toolbar-btn-size: 30px;
+  --craft-rail-width: 36px;
+  --craft-rail-btn-size: 28px;
+  --craft-dock-width: 290px;
+  --craft-slider-knob-size: 12px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="proLight"] {
+  /* Theme: Pro (Light) (ProLight) */
+  --craft-chrome: #f0f0f0;
+  --craft-canvas: #d6d6d6;
+  --craft-canvas-dot: #d6d6d6;
+  --craft-dock: #e2e2e2;
+  --craft-card: #f0f0f0;
+  --craft-card-border: #d6d6d6;
+  --craft-field: #ffffff;
+  --craft-field-border: #bababa;
+  --craft-hover: #e2e2e2;
+  --craft-pressed: #cecece;
+  --craft-text: #141414;
+  --craft-text-dim: #404040;
+  --craft-text-faint: #787878;
+  --craft-icon: #2e2e2e;
+  --craft-accent: #378ef0;
+  --craft-accent-soft: #d6d6d6;
+  --craft-accent-border: #378ef0;
+  --craft-accent-text: #1062c4;
+  --craft-separator: #d6d6d6;
+  --craft-shadow: rgba(0, 0, 0, 0.1961);
+  --craft-primary-bg: #378ef0;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #ec5b62;
+  --craft-warning: #e8b046;
+  --craft-radius-sm: 3px;
+  --craft-radius: 4px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: #e2e2e2;
+  --craft-row-selected: #cccccc;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: #c9c9c9;
+  --craft-knob-outline: #282828;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12px;
+  --craft-btn-height: 28px;
+  --craft-btn-radius: 14px;
+  --craft-titlebar-height: 32px;
+  --craft-optionsbar-height: 36px;
+  --craft-optionsbar-narrow-height: 30px;
+  --craft-statusbar-height: 24px;
+  --craft-statusbar-ctrl-height: 18px;
+  --craft-toolbar-width: 40px;
+  --craft-toolbar-btn-size: 30px;
+  --craft-rail-width: 36px;
+  --craft-rail-btn-size: 28px;
+  --craft-dock-width: 290px;
+  --craft-slider-knob-size: 12px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="studio"] {
+  /* Theme: Studio (Dark) (Studio) */
+  --craft-chrome: #141415;
+  --craft-canvas: #0e0e0f;
+  --craft-canvas-dot: #2e2e32;
+  --craft-dock: #111112;
+  --craft-card: #1a1a1c;
+  --craft-card-border: #28282c;
+  --craft-field: #232326;
+  --craft-field-border: #343439;
+  --craft-hover: #2c2c30;
+  --craft-pressed: #38383e;
+  --craft-text: #ececf0;
+  --craft-text-dim: #96969e;
+  --craft-text-faint: #606068;
+  --craft-icon: #c4c4cc;
+  --craft-accent: #8b7cf6;
+  --craft-accent-soft: rgba(139, 124, 246, 0.1804);
+  --craft-accent-border: rgba(160, 148, 255, 0.4314);
+  --craft-accent-text: #d6d0ff;
+  --craft-separator: #26262a;
+  --craft-shadow: rgba(0, 0, 0, 0.549);
+  --craft-primary-bg: #f6f6f8;
+  --craft-primary-text: #0c0c0e;
+  --craft-danger: #f06060;
+  --craft-warning: #f0be5a;
+  --craft-radius-sm: 6px;
+  --craft-radius: 8px;
+  --craft-radius-lg: 12px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #0e0e0f;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(139, 124, 246, 0.1804);
+  --craft-knob-outline: none;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 6px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="studioLight"] {
+  /* Theme: Studio (Light) (StudioLight) */
+  --craft-chrome: #f6f6f8;
+  --craft-canvas: #e2e2e6;
+  --craft-canvas-dot: #c8c8ce;
+  --craft-dock: #f0f0f3;
+  --craft-card: #fcfcfd;
+  --craft-card-border: #dedee4;
+  --craft-field: #f2f2f5;
+  --craft-field-border: #d6d6dc;
+  --craft-hover: #e8e8ed;
+  --craft-pressed: #dcdce2;
+  --craft-text: #18181c;
+  --craft-text-dim: #60606a;
+  --craft-text-faint: #9696a0;
+  --craft-icon: #3c3c44;
+  --craft-accent: #6c5ce7;
+  --craft-accent-soft: rgba(108, 92, 231, 0.1412);
+  --craft-accent-border: rgba(108, 92, 231, 0.4706);
+  --craft-accent-text: #5040c8;
+  --craft-separator: #e2e2e8;
+  --craft-shadow: rgba(0, 0, 0, 0.1961);
+  --craft-primary-bg: #141418;
+  --craft-primary-text: #fafafc;
+  --craft-danger: #d23c3c;
+  --craft-warning: #be8214;
+  --craft-radius-sm: 6px;
+  --craft-radius: 8px;
+  --craft-radius-lg: 12px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 240;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(108, 92, 231, 0.1412);
+  --craft-knob-outline: #60606a;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 6px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="classic"] {
+  /* Theme: Classic (Classic) */
+  --craft-chrome: #d4d0c8;
+  --craft-canvas: #808080;
+  --craft-canvas-dot: #808080;
+  --craft-dock: #d4d0c8;
+  --craft-card: #d4d0c8;
+  --craft-card-border: #808080;
+  --craft-field: #ffffff;
+  --craft-field-border: #808080;
+  --craft-hover: #e2ded6;
+  --craft-pressed: #bebab2;
+  --craft-text: #000000;
+  --craft-text-dim: #404040;
+  --craft-text-faint: #808080;
+  --craft-icon: #000000;
+  --craft-accent: #0a246a;
+  --craft-accent-soft: #0a246a;
+  --craft-accent-border: #0a246a;
+  --craft-accent-text: #ffffff;
+  --craft-separator: #808080;
+  --craft-shadow: rgba(0, 0, 0, 0.0);
+  --craft-primary-bg: #d4d0c8;
+  --craft-primary-text: #000000;
+  --craft-danger: #a00000;
+  --craft-warning: #806000;
+  --craft-radius-sm: 0px;
+  --craft-radius: 0px;
+  --craft-radius-lg: 0px;
+  --craft-tab-strip: #d4d0c8;
+  --craft-row-selected: #0a246a;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 240;
+  --craft-caption-close: #c42b1c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: #0a246a;
+  --craft-knob-outline: #404040;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 0px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="solarizedDark"] {
+  /* Theme: Solarized Dark (SolarizedDark) */
+  --craft-chrome: #073642;
+  --craft-canvas: #002b36;
+  --craft-canvas-dot: #0a3d4a;
+  --craft-dock: #00252f;
+  --craft-card: #073642;
+  --craft-card-border: #00252f;
+  --craft-field: #00252f;
+  --craft-field-border: #15505f;
+  --craft-hover: #0e4a5a;
+  --craft-pressed: #12596b;
+  --craft-text: #839496;
+  --craft-text-dim: #657b83;
+  --craft-text-faint: #586e75;
+  --craft-icon: #93a1a1;
+  --craft-accent: #268bd2;
+  --craft-accent-soft: rgba(38, 139, 210, 0.1804);
+  --craft-accent-border: rgba(38, 139, 210, 0.4706);
+  --craft-accent-text: #fdf6e3;
+  --craft-separator: #00252f;
+  --craft-shadow: rgba(0, 0, 0, 0.5882);
+  --craft-primary-bg: #268bd2;
+  --craft-primary-text: #fdf6e3;
+  --craft-danger: #dc322f;
+  --craft-warning: #b58900;
+  --craft-radius-sm: 6px;
+  --craft-radius: 8px;
+  --craft-radius-lg: 12px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #002b36;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #dc322f;
+  --craft-caption-close-text: #fdf6e3;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(38, 139, 210, 0.1804);
+  --craft-knob-outline: none;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 6px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="adwaita"] {
+  /* Theme: Adwaita (Light) (Adwaita) */
+  --craft-chrome: #ffffff;
+  --craft-canvas: #dededf;
+  --craft-canvas-dot: #dededf;
+  --craft-dock: #ebebed;
+  --craft-card: #ffffff;
+  --craft-card-border: #dadadd;
+  --craft-field: #ebebed;
+  --craft-field-border: #dadadd;
+  --craft-hover: #e2e2e5;
+  --craft-pressed: #d4d4d8;
+  --craft-text: #323236;
+  --craft-text-dim: #646468;
+  --craft-text-faint: #9b9ba0;
+  --craft-icon: #38383c;
+  --craft-accent: #3584e4;
+  --craft-accent-soft: rgba(53, 132, 228, 0.1569);
+  --craft-accent-border: rgba(53, 132, 228, 0.5098);
+  --craft-accent-text: #1c71d8;
+  --craft-separator: #dedee1;
+  --craft-shadow: rgba(0, 0, 0, 0.1765);
+  --craft-primary-bg: #3584e4;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #c01c28;
+  --craft-warning: #9c6e03;
+  --craft-radius-sm: 6px;
+  --craft-radius: 9px;
+  --craft-radius-lg: 12px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #282828;
+  --craft-histogram-level: 240;
+  --craft-caption-close: #d4d4d8;
+  --craft-caption-close-text: #323236;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(53, 132, 228, 0.1569);
+  --craft-knob-outline: #646468;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 6px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="adwaitaDark"] {
+  /* Theme: Adwaita (Dark) (AdwaitaDark) */
+  --craft-chrome: #2e2e32;
+  --craft-canvas: #1d1d20;
+  --craft-canvas-dot: #1d1d20;
+  --craft-dock: #222226;
+  --craft-card: #36363a;
+  --craft-card-border: #404044;
+  --craft-field: #404044;
+  --craft-field-border: #4c4c50;
+  --craft-hover: #48484c;
+  --craft-pressed: #56565a;
+  --craft-text: #ffffff;
+  --craft-text-dim: #c0c0c2;
+  --craft-text-faint: #919194;
+  --craft-icon: #ebebed;
+  --craft-accent: #3584e4;
+  --craft-accent-soft: rgba(53, 132, 228, 0.2353);
+  --craft-accent-border: rgba(120, 174, 237, 0.549);
+  --craft-accent-text: #78aeed;
+  --craft-separator: #18181b;
+  --craft-shadow: rgba(0, 0, 0, 0.549);
+  --craft-primary-bg: #3584e4;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #ff7b63;
+  --craft-warning: #f8e45c;
+  --craft-radius-sm: 6px;
+  --craft-radius: 9px;
+  --craft-radius-lg: 12px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #1d1d20;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #48484c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(53, 132, 228, 0.2353);
+  --craft-knob-outline: none;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 6px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="breezeLight"] {
+  /* Theme: Breeze Light (BreezeLight) */
+  --craft-chrome: #dbdee2;
+  --craft-canvas: #dbdee2;
+  --craft-canvas-dot: #dbdee2;
+  --craft-dock: #e0e3e7;
+  --craft-card: #eceef1;
+  --craft-card-border: #cbd0d5;
+  --craft-field: #f9fafc;
+  --craft-field-border: #b8bfc6;
+  --craft-hover: #e2e6eb;
+  --craft-pressed: #d0d6dd;
+  --craft-text: #21252a;
+  --craft-text-dim: #363f48;
+  --craft-text-faint: #515a64;
+  --craft-icon: #343a40;
+  --craft-accent: #3aace8;
+  --craft-accent-soft: rgba(58, 172, 232, 0.1882);
+  --craft-accent-border: rgba(58, 172, 232, 0.6667);
+  --craft-accent-text: #1e5e88;
+  --craft-separator: #d6dade;
+  --craft-shadow: rgba(0, 0, 0, 0.1765);
+  --craft-primary-bg: #237ab4;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #aa3240;
+  --craft-warning: #994800;
+  --craft-radius-sm: 5px;
+  --craft-radius: 5px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #21252a;
+  --craft-histogram-level: 240;
+  --craft-caption-close: #d5333c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(58, 172, 232, 0.1882);
+  --craft-knob-outline: #363f48;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 5px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="breezeDark"] {
+  /* Theme: Breeze Dark (BreezeDark) */
+  --craft-chrome: #262a30;
+  --craft-canvas: #111418;
+  --craft-canvas-dot: #111418;
+  --craft-dock: #1a1d22;
+  --craft-card: #1d2126;
+  --craft-card-border: #34383d;
+  --craft-field: #262a30;
+  --craft-field-border: #44494f;
+  --craft-hover: #32363b;
+  --craft-pressed: #3a3f45;
+  --craft-text: #fafbfd;
+  --craft-text-dim: #c8ced5;
+  --craft-text-faint: #a4aab1;
+  --craft-icon: #eceef0;
+  --craft-accent: #3aace8;
+  --craft-accent-soft: rgba(58, 172, 232, 0.1569);
+  --craft-accent-border: rgba(58, 172, 232, 0.6275);
+  --craft-accent-text: #50b8ee;
+  --craft-separator: #2e3236;
+  --craft-shadow: rgba(0, 0, 0, 0.5882);
+  --craft-primary-bg: #1e76b0;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #e36f7b;
+  --craft-warning: #f47806;
+  --craft-radius-sm: 5px;
+  --craft-radius: 5px;
+  --craft-radius-lg: 6px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #111418;
+  --craft-histogram-level: 225;
+  --craft-caption-close: #d5333c;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.4314);
+  --craft-field-selection: rgba(58, 172, 232, 0.1569);
+  --craft-knob-outline: none;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 5px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="softDark"] {
+  /* Theme: Soft Dark (SoftDark) */
+  --craft-chrome: #3a3a44;
+  --craft-canvas: #282830;
+  --craft-canvas-dot: #282830;
+  --craft-dock: #2f2f38;
+  --craft-card: #363640;
+  --craft-card-border: #464652;
+  --craft-field: #40404b;
+  --craft-field-border: #545462;
+  --craft-hover: #444450;
+  --craft-pressed: #4a4a58;
+  --craft-text: #eeeef6;
+  --craft-text-dim: #d4d4e0;
+  --craft-text-faint: #bebece;
+  --craft-icon: #d6d6e2;
+  --craft-accent: #8a9ae8;
+  --craft-accent-soft: rgba(138, 154, 232, 0.1882);
+  --craft-accent-border: rgba(138, 154, 232, 0.5882);
+  --craft-accent-text: #bec8fc;
+  --craft-separator: #24242c;
+  --craft-shadow: rgba(0, 0, 0, 0.4314);
+  --craft-primary-bg: #5668c4;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #faa0ac;
+  --craft-warning: #f0c882;
+  --craft-radius-sm: 7px;
+  --craft-radius: 10px;
+  --craft-radius-lg: 14px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #282830;
+  --craft-histogram-level: 220;
+  --craft-caption-close: #c84856;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.3922);
+  --craft-field-selection: rgba(138, 154, 232, 0.1882);
+  --craft-knob-outline: none;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 7px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+[data-craft-theme="softLight"] {
+  /* Theme: Soft Light (SoftLight) */
+  --craft-chrome: #e8e6ec;
+  --craft-canvas: #dad8e0;
+  --craft-canvas-dot: #dad8e0;
+  --craft-dock: #e2e0e7;
+  --craft-card: #f0eef3;
+  --craft-card-border: #d0cdd7;
+  --craft-field: #faf9fc;
+  --craft-field-border: #bebbc9;
+  --craft-hover: #e4e2ea;
+  --craft-pressed: #d4d1dd;
+  --craft-text: #2c2a38;
+  --craft-text-dim: #3e3c4c;
+  --craft-text-faint: #504e60;
+  --craft-icon: #403e50;
+  --craft-accent: #6e80d8;
+  --craft-accent-soft: rgba(110, 128, 216, 0.1725);
+  --craft-accent-border: rgba(110, 128, 216, 0.6667);
+  --craft-accent-text: #2e3a92;
+  --craft-separator: #d2cfda;
+  --craft-shadow: rgba(0, 0, 0, 0.1569);
+  --craft-primary-bg: #5062be;
+  --craft-primary-text: #ffffff;
+  --craft-danger: #a62c3e;
+  --craft-warning: #8c4800;
+  --craft-radius-sm: 7px;
+  --craft-radius: 10px;
+  --craft-radius-lg: 14px;
+  --craft-tab-strip: transparent;
+  --craft-row-selected: transparent;
+  --craft-histogram-bg: #2c2a38;
+  --craft-histogram-level: 240;
+  --craft-caption-close: #c83c48;
+  --craft-caption-close-text: #ffffff;
+  --craft-scrim: rgba(0, 0, 0, 0.3529);
+  --craft-field-selection: rgba(110, 128, 216, 0.1725);
+  --craft-knob-outline: #3e3c4c;
+
+  /* Grammar-Adaptive Metrics */
+  --craft-body-base: 12.5px;
+  --craft-btn-height: 30px;
+  --craft-btn-radius: 7px;
+  --craft-titlebar-height: 38px;
+  --craft-optionsbar-height: 42px;
+  --craft-optionsbar-narrow-height: 34px;
+  --craft-statusbar-height: 30px;
+  --craft-statusbar-ctrl-height: 22px;
+  --craft-toolbar-width: 50px;
+  --craft-toolbar-btn-size: 36px;
+  --craft-rail-width: 44px;
+  --craft-rail-btn-size: 32px;
+  --craft-dock-width: 300px;
+  --craft-slider-knob-size: 14px;
+
+  /* Computed Font Sizes */
+  --craft-fs-heading: calc(15px * var(--craft-font-scale));
+  --craft-fs-button: calc(13px * var(--craft-font-scale));
+  --craft-fs-titlebar: calc(13px * var(--craft-font-scale));
+  --craft-fs-pill-tab: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-body: calc(12.5px * var(--craft-font-scale));
+  --craft-fs-mono: calc(12px * var(--craft-font-scale));
+  --craft-fs-section: calc(11.5px * var(--craft-font-scale));
+  --craft-fs-unit: calc(11px * var(--craft-font-scale));
+  --craft-fs-small: calc(10.5px * var(--craft-font-scale));
+}
+
+/* --------------------------------------------------------------------------
+   4. Base Reset & Typography Classes
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body.craft-app,
+.craft-scope {
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-body);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--craft-text);
+  background-color: var(--craft-dock);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--craft-field-selection);
+  color: var(--craft-text);
+}
+
+.craft-heading {
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-heading);
+  font-weight: 600;
+  color: var(--craft-text);
+  letter-spacing: -0.01em;
+}
+
+.craft-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  padding-bottom: 2px;
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-section);
+  font-weight: 500;
+  color: var(--craft-text-dim);
+  user-select: none;
+}
+
+.craft-mono {
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-mono);
+}
+
+.craft-small {
+  font-size: var(--craft-fs-small);
+  color: var(--craft-text-dim);
+}
+
+.craft-faint {
+  color: var(--craft-text-faint);
+}
+
+.craft-elided {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Inline SVG Icon sizing & normalization */
+.craft-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--craft-icon);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.craft-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.craft-icon-sm { width: 12px; height: 12px; }
+.craft-icon-md { width: 16px; height: 16px; }
+.craft-icon-lg { width: 18px; height: 18px; }
+
+/* --------------------------------------------------------------------------
+   5. Classic Windows 2000 3D Bevel Helpers (Theme::draw_bevel)
+   -------------------------------------------------------------------------- */
+.craft-bevel-raised,
+[data-craft-bevel="true"] .craft-btn-primary,
+[data-craft-bevel="true"] .craft-btn-secondary,
+[data-craft-bevel="true"] .craft-btn-compact,
+[data-craft-bevel="true"] .craft-dropdown,
+[data-craft-bevel="true"] .craft-panel,
+[data-craft-bevel="true"] .craft-toolbar,
+[data-craft-bevel="true"] .craft-titlebar,
+[data-craft-bevel="true"] .craft-options-bar,
+[data-craft-bevel="true"] .craft-status-bar {
+  border-radius: 0 !important;
+  border: 1px solid #808080 !important;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #404040 !important;
+}
+
+.craft-bevel-sunken,
+[data-craft-bevel="true"] .craft-value-field,
+[data-craft-bevel="true"] .craft-popup-value-field,
+[data-craft-bevel="true"] .craft-text-field,
+[data-craft-bevel="true"] .craft-checkbox,
+[data-craft-bevel="true"] .craft-btn-primary:active,
+[data-craft-bevel="true"] .craft-btn-secondary:active,
+[data-craft-bevel="true"] .craft-icon-btn.is-active {
+  border-radius: 0 !important;
+  border: 1px solid #808080 !important;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Buttons (widgets/buttons.rs: primary_button, secondary_button,
+      compact_button, icon_button, rail_button, dialog_buttons)
+   -------------------------------------------------------------------------- */
+.craft-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--craft-btn-height);
+  padding: 0 14px;
+  border-radius: var(--craft-btn-radius);
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-button);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background-color 80ms ease, border-color 80ms ease, filter 80ms ease;
+  outline: none;
+}
+
+.craft-btn:focus-visible {
+  box-shadow: 0 0 0 1.5px var(--craft-accent);
+}
+
+.craft-btn:disabled,
+.craft-btn.is-disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary Button: filled primary_bg + primary_text */
+.craft-btn-primary {
+  background-color: var(--craft-primary-bg);
+  color: var(--craft-primary-text);
+  border: 1px solid transparent;
+}
+.craft-btn-primary .craft-icon {
+  color: var(--craft-primary-text);
+}
+.craft-btn-primary:hover {
+  filter: brightness(1.09);
+}
+.craft-btn-primary:active {
+  filter: brightness(0.95);
+}
+
+/* Secondary Button:
+   - Studio: rounded rect with field fill + 1px field_border
+   - Pro: pill with transparent fill + 1.5px inside stroke (text_dim -> text on hover) */
+.craft-btn-secondary {
+  background-color: var(--craft-field);
+  color: var(--craft-text);
+  border: 1px solid var(--craft-field-border);
+}
+.craft-btn-secondary:hover {
+  background-color: var(--craft-hover);
+}
+.craft-btn-secondary:active {
+  background-color: var(--craft-pressed);
+}
+
+[data-craft-pro="true"] .craft-btn-secondary,
+.craft-scope[data-craft-pro="true"] .craft-btn-secondary {
+  background-color: transparent;
+  border: 1.5px solid var(--craft-text-dim);
+}
+[data-craft-pro="true"][data-craft-dark="true"] .craft-btn-secondary:hover,
+.craft-scope[data-craft-pro="true"][data-craft-dark="true"] .craft-btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.047);
+  border-color: var(--craft-text);
+}
+[data-craft-pro="true"][data-craft-dark="false"] .craft-btn-secondary:hover,
+.craft-scope[data-craft-pro="true"][data-craft-dark="false"] .craft-btn-secondary:hover {
+  background-color: rgba(0, 0, 0, 0.047);
+  border-color: var(--craft-text);
+}
+[data-craft-pro="true"][data-craft-dark="true"] .craft-btn-secondary:active,
+.craft-scope[data-craft-pro="true"][data-craft-dark="true"] .craft-btn-secondary:active {
+  background-color: rgba(255, 255, 255, 0.094);
+  border-color: var(--craft-text);
+}
+
+/* Danger / Destructive Button (ConfirmRole::Destructive) */
+.craft-btn-danger {
+  background-color: var(--craft-danger);
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+.craft-btn-danger:hover {
+  filter: brightness(1.1);
+}
+
+/* Compact Button (22px height, options bar & panel headers) */
+.craft-btn-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  color: var(--craft-text);
+  border: 1px solid var(--craft-field-border);
+  font-family: var(--craft-font-sans);
+  font-size: calc(12px * var(--craft-font-scale));
+  font-weight: 400;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.craft-btn-compact:hover {
+  background-color: var(--craft-hover);
+}
+.craft-btn-compact:active,
+.craft-btn-compact.is-active {
+  background-color: var(--craft-accent-soft);
+  border-color: var(--craft-accent-border);
+  color: var(--craft-accent-text);
+}
+
+/* Icon Button (28x28 default, toolbars, panel footers, options bar) */
+.craft-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--craft-radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--craft-icon);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  flex-shrink: 0;
+}
+.craft-icon-btn:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+.craft-icon-btn:hover .craft-icon {
+  color: var(--craft-text);
+}
+.craft-icon-btn:active {
+  background-color: var(--craft-pressed);
+}
+.craft-icon-btn.is-active {
+  background-color: var(--craft-accent-soft);
+  border-color: var(--craft-accent-border);
+  color: var(--craft-accent-text);
+}
+.craft-icon-btn.is-active .craft-icon {
+  color: var(--craft-accent-text);
+}
+.craft-icon-btn-sm {
+  width: 22px;
+  height: 22px;
+}
+
+/* Dialog Footer Button Strip (dialog_buttons) */
+.craft-dialog-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.craft-dialog-buttons[data-platform-order="macos"] .craft-dialog-cancel {
+  order: 1;
+}
+.craft-dialog-buttons[data-platform-order="macos"] .craft-dialog-confirm {
+  order: 2;
+}
+.craft-dialog-buttons[data-platform-order="win-linux"] .craft-dialog-confirm {
+  order: 1;
+}
+.craft-dialog-buttons[data-platform-order="win-linux"] .craft-dialog-cancel {
+  order: 2;
+}
+
+/* --------------------------------------------------------------------------
+   7. Checkboxes & Adaptive Toggles (widgets/buttons.rs: checkbox, toggle)
+   -------------------------------------------------------------------------- */
+.craft-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--craft-fs-body);
+  color: var(--craft-text);
+}
+
+/* 14x14 Checkbox */
+.craft-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color 80ms ease, border-color 80ms ease;
+}
+[data-craft-pro="false"] .craft-checkbox {
+  border-radius: 3px;
+}
+.craft-check-row:hover .craft-checkbox,
+.craft-checkbox:hover {
+  background-color: var(--craft-hover);
+  border-color: var(--craft-text-dim);
+}
+.craft-checkbox.is-checked {
+  background-color: var(--craft-accent);
+  border-color: var(--craft-accent);
+}
+.craft-checkbox::after {
+  content: '';
+  width: 8px;
+  height: 5px;
+  border-left: 1.7px solid #ffffff;
+  border-bottom: 1.7px solid #ffffff;
+  transform: rotate(-45deg) translate(0.5px, -0.5px);
+  opacity: 0;
+}
+.craft-checkbox.is-checked::after {
+  opacity: 1;
+}
+
+/* Pill Toggle Switch (30x17px in Studio, delegates to 14x14 Checkbox in Pro!) */
+.craft-toggle {
+  display: inline-flex;
+  align-items: center;
+  width: 30px;
+  height: 17px;
+  border-radius: 8.5px;
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background-color 110ms ease, border-color 110ms ease;
+}
+.craft-toggle::before {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background-color: var(--craft-text-dim);
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: left 110ms ease, background-color 110ms ease;
+}
+.craft-toggle.is-checked {
+  background-color: var(--craft-accent);
+  border-color: transparent;
+}
+.craft-toggle.is-checked::before {
+  left: 14px;
+  background-color: #ffffff;
+}
+
+/* In Pro mode, adaptive .craft-toggle.is-adaptive renders as the 14x14 Spectrum checkbox */
+[data-craft-pro="true"] .craft-toggle.is-adaptive,
+.craft-scope[data-craft-pro="true"] .craft-toggle.is-adaptive {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  justify-content: center;
+}
+[data-craft-pro="true"] .craft-toggle.is-adaptive::before,
+.craft-scope[data-craft-pro="true"] .craft-toggle.is-adaptive::before {
+  display: none;
+}
+[data-craft-pro="true"] .craft-toggle.is-adaptive.is-checked::after,
+.craft-scope[data-craft-pro="true"] .craft-toggle.is-adaptive.is-checked::after {
+  content: '';
+  width: 8px;
+  height: 5px;
+  border-left: 1.7px solid #ffffff;
+  border-bottom: 1.7px solid #ffffff;
+  transform: rotate(-45deg) translate(0.5px, -0.5px);
+}
+
+/* --------------------------------------------------------------------------
+   8. Scrubby Labels, Numeric Value Fields & Popup Value Fields
+      (widgets/fields.rs: scrub_label, value_field, popup_value_field)
+   -------------------------------------------------------------------------- */
+.craft-scrub-label {
+  display: inline;
+  color: var(--craft-text-dim);
+  font-size: var(--craft-fs-body);
+  cursor: ew-resize;
+  user-select: none;
+  border-bottom: 1px dashed transparent;
+  transition: color 80ms ease, border-color 80ms ease;
+  white-space: nowrap;
+}
+.craft-scrub-label:hover,
+.craft-scrub-label.is-scrubbing {
+  color: var(--craft-text);
+  border-bottom-color: var(--craft-accent);
+}
+
+/* Colon suffix helper that automatically shows ":" in Pro and hides it in Studio */
+.craft-pro-colon::after {
+  content: '';
+}
+[data-craft-pro="true"] .craft-pro-colon::after,
+.craft-scope[data-craft-pro="true"] .craft-pro-colon::after {
+  content: ':';
+}
+
+.craft-value-field {
+  display: inline-flex;
+  align-items: center;
+  height: var(--craft-value-field-h);
+  width: 66px;
+  padding: 0 6px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-mono);
+  color: var(--craft-text);
+  position: relative;
+  cursor: ew-resize;
+  user-select: none;
+}
+.craft-value-field:hover {
+  border-color: var(--craft-text-faint);
+}
+.craft-value-field.is-editing,
+.craft-value-field:focus-within {
+  border: 1.5px solid var(--craft-accent);
+  padding: 0 5.5px;
+  cursor: text;
+}
+.craft-value-field input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--craft-text);
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-mono);
+  text-align: right;
+  padding: 0;
+  margin: 0;
+  outline: none;
+}
+.craft-value-unit {
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-unit);
+  color: var(--craft-text-dim);
+  margin-left: 2px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Popup Value Field (value field + 14px arrow button + floating 160px slider) */
+.craft-popup-value-field {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--craft-value-field-h);
+  width: 76px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  position: relative;
+  user-select: none;
+}
+.craft-popup-value-field:hover,
+.craft-popup-value-field.is-open {
+  border-color: var(--craft-text-faint);
+}
+.craft-popup-value-field.is-editing,
+.craft-popup-value-field:focus-within {
+  border: 1.5px solid var(--craft-accent);
+}
+.craft-popup-value-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 5px;
+  cursor: ew-resize;
+  min-width: 0;
+}
+.craft-popup-value-main input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--craft-text);
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-mono);
+  text-align: right;
+  padding: 0;
+  outline: none;
+}
+.craft-popup-value-arrow {
+  width: var(--craft-popup-arrow-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid transparent;
+  color: var(--craft-text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.craft-popup-value-field:hover .craft-popup-value-arrow,
+.craft-popup-value-field.is-open .craft-popup-value-arrow {
+  border-left-color: var(--craft-field-border);
+  color: var(--craft-text);
+}
+.craft-popup-value-arrow:hover {
+  background-color: var(--craft-hover);
+}
+.craft-popup-slider-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: var(--craft-popup-slider-w);
+  padding: 6px 10px;
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius);
+  box-shadow: var(--craft-popup-shadow);
+  z-index: 200;
+  display: none;
+}
+.craft-popup-value-field.is-open .craft-popup-slider-popover {
+  display: block;
+}
+
+/* Single-line Text Field (widgets/text_field.rs: text_field) */
+.craft-text-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--craft-text-field-h);
+  padding: 0 8px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  color: var(--craft-text);
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-body);
+}
+.craft-text-field:hover {
+  border-color: var(--craft-text-faint);
+}
+.craft-text-field:focus-within {
+  border: 1.5px solid var(--craft-accent);
+  padding: 0 7.5px;
+}
+.craft-text-field input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--craft-text);
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 0;
+}
+.craft-text-field input::placeholder {
+  color: var(--craft-text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   9. Sliders (widgets/slider.rs: thin_slider, gradient_slider, slider_row)
+   -------------------------------------------------------------------------- */
+.craft-slider-row {
+  display: grid;
+  grid-template-columns: 76px 1fr 66px;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.craft-slider {
+  position: relative;
+  height: var(--craft-slider-h);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.craft-slider-track {
+  position: relative;
+  width: 100%;
+  height: var(--craft-slider-track-h);
+  border-radius: 1.5px;
+  background-color: var(--craft-field);
+  box-shadow: inset 0 0 0 0.5px var(--craft-field-border);
+  overflow: hidden;
+}
+
+.craft-slider.is-gradient .craft-slider-track {
+  height: var(--craft-slider-grad-h);
+  border-radius: 2.5px;
+}
+
+.craft-slider-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--craft-slider-pct, 50%);
+  background-color: var(--craft-accent);
+  opacity: 0.82;
+  border-radius: inherit;
+}
+.craft-slider:hover .craft-slider-fill,
+.craft-slider.is-dragging .craft-slider-fill {
+  opacity: 1;
+}
+.craft-slider.is-gradient .craft-slider-fill {
+  display: none;
+}
+
+/* Center zero tick mark for bipolar sliders (-100 to +100) */
+.craft-slider.is-bipolar::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background-color: var(--craft-field-border);
+  z-index: 0;
+}
+
+.craft-slider-knob {
+  position: absolute;
+  left: var(--craft-slider-pct, 50%);
+  top: 50%;
+  width: var(--craft-slider-knob-size);
+  height: var(--craft-slider-knob-size);
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid var(--craft-knob-outline);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.47);
+  transform: translate(-50%, -50%);
+  transition: box-shadow 80ms ease, background-color 80ms ease;
+  z-index: 2;
+}
+.craft-slider:hover .craft-slider-knob,
+.craft-slider.is-dragging .craft-slider-knob {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.47), 0 0 0 4px color-mix(in srgb, var(--craft-accent) 24%, transparent);
+}
+[data-craft-pro="true"] .craft-slider.is-dragging .craft-slider-knob,
+.craft-scope[data-craft-pro="true"] .craft-slider.is-dragging .craft-slider-knob {
+  background-color: var(--craft-accent);
+}
+
+/* Classic Windows 2000 3D Beveled Rectangular Slider Thumb (10x16px) */
+[data-craft-bevel="true"] .craft-slider-knob,
+.craft-scope[data-craft-bevel="true"] .craft-slider-knob {
+  width: 10px;
+  height: 16px;
+  border-radius: 0;
+  background-color: #d4d0c8;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #404040;
+}
+
+/* --------------------------------------------------------------------------
+   10. Dropdowns & Spectrum/Studio Context Menus (widgets/dropdown.rs)
+   -------------------------------------------------------------------------- */
+.craft-dropdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  min-width: 112px;
+  padding: 0 8px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  color: var(--craft-text);
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-body);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.craft-dropdown:hover {
+  background-color: var(--craft-hover);
+}
+.craft-dropdown.is-open {
+  border-color: var(--craft-accent);
+}
+.craft-dropdown-chevron {
+  width: 8px;
+  height: 8px;
+  color: var(--craft-text-dim);
+  flex-shrink: 0;
+}
+
+/* Popup Menu (style_spectrum_popup_menu in Pro vs Studio popup) */
+.craft-menu {
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-field-border);
+  border-radius: var(--craft-radius);
+  box-shadow: var(--craft-popup-shadow);
+  padding: 4px;
+  min-width: 170px;
+  font-size: var(--craft-fs-body);
+  color: var(--craft-text);
+  user-select: none;
+}
+[data-craft-pro="true"] .craft-menu,
+.craft-scope[data-craft-pro="true"] .craft-menu {
+  padding: 4px 0;
+  border-color: var(--craft-separator);
+}
+.craft-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--craft-radius-sm);
+  cursor: pointer;
+  color: var(--craft-text);
+}
+[data-craft-pro="true"] .craft-menu-item,
+.craft-scope[data-craft-pro="true"] .craft-menu-item {
+  border-radius: 0;
+  padding: 0 12px;
+}
+.craft-menu-item:hover,
+.craft-menu-item.is-highlighted {
+  background-color: var(--craft-hover);
+}
+/* In Pro mode, style_spectrum_popup_menu uses full-bleed Spectrum blue hover + white text */
+[data-craft-pro="true"] .craft-menu-item:hover,
+[data-craft-pro="true"] .craft-menu-item.is-highlighted,
+.craft-scope[data-craft-pro="true"] .craft-menu-item:hover,
+.craft-scope[data-craft-pro="true"] .craft-menu-item.is-highlighted {
+  background-color: var(--craft-accent);
+  color: #ffffff;
+}
+[data-craft-pro="true"] .craft-menu-item:hover .craft-menu-shortcut,
+[data-craft-pro="true"] .craft-menu-item.is-highlighted .craft-menu-shortcut,
+.craft-scope[data-craft-pro="true"] .craft-menu-item:hover .craft-menu-shortcut,
+.craft-scope[data-craft-pro="true"] .craft-menu-item.is-highlighted .craft-menu-shortcut {
+  color: rgba(255, 255, 255, 0.85);
+}
+.craft-menu-shortcut {
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-small);
+  color: var(--craft-text-faint);
+}
+.craft-menu-sep {
+  height: 1px;
+  background-color: var(--craft-separator);
+  margin: 4px 0;
+}
+
+/* --------------------------------------------------------------------------
+   11. Panels, Tab Strips & Pill Tabs (widgets/panel.rs, widgets/tab_strip.rs)
+   -------------------------------------------------------------------------- */
+.craft-panel {
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+[data-craft-pro="true"] .craft-panel,
+.craft-scope[data-craft-pro="true"] .craft-panel {
+  border-radius: 0;
+  border-color: var(--craft-separator);
+}
+
+/* Pro Tab Strip Header (tab_strip_bar) vs Studio Card Header */
+.craft-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--craft-tab-strip);
+  border-bottom: 1px solid var(--craft-separator);
+  min-height: 26px;
+  padding: 0 6px 0 0;
+  user-select: none;
+}
+[data-craft-pro="false"] .craft-panel-header,
+.craft-scope[data-craft-pro="false"] .craft-panel-header {
+  background-color: var(--craft-card);
+  padding: 6px 8px 4px 8px;
+  border-bottom: 1px solid var(--craft-separator);
+}
+
+.craft-tab-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+[data-craft-pro="false"] .craft-tab-strip,
+.craft-scope[data-craft-pro="false"] .craft-tab-strip {
+  gap: 3px;
+}
+
+.craft-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 11px;
+  height: 26px;
+  font-family: var(--craft-font-sans);
+  font-size: var(--craft-fs-body);
+  font-weight: 400;
+  color: var(--craft-text-dim);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--craft-separator);
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+.craft-tab:hover {
+  color: var(--craft-text);
+  background-color: var(--craft-hover);
+}
+.craft-tab.is-active {
+  background-color: var(--craft-card);
+  color: var(--craft-text);
+  font-weight: 500;
+}
+.craft-tab.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--craft-accent);
+}
+
+/* Studio Mode Pill Tabs (pill_tab) */
+[data-craft-pro="false"] .craft-tab,
+.craft-scope[data-craft-pro="false"] .craft-tab,
+.craft-pill-tab {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--craft-radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--craft-fs-pill-tab);
+}
+[data-craft-pro="false"] .craft-tab.is-active,
+.craft-scope[data-craft-pro="false"] .craft-tab.is-active,
+.craft-pill-tab.is-active {
+  background-color: var(--craft-hover);
+  border-color: var(--craft-field-border);
+  color: var(--craft-text);
+  font-weight: 500;
+}
+[data-craft-pro="false"] .craft-tab.is-active::before,
+.craft-scope[data-craft-pro="false"] .craft-tab.is-active::before,
+.craft-pill-tab.is-active::before {
+  display: none;
+}
+
+/* Panel Menu Icon (Pro = 3-line hamburger, Studio = 3-dot ellipsis) */
+.craft-panel-menu-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--craft-radius-sm);
+  color: var(--craft-text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.craft-panel-menu-btn:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+.craft-panel-menu-hamburger {
+  display: none;
+  width: 10px;
+  height: 8px;
+  position: relative;
+}
+.craft-panel-menu-hamburger span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.25px;
+  background-color: currentColor;
+}
+.craft-panel-menu-hamburger span:nth-child(1) { top: 0; }
+.craft-panel-menu-hamburger span:nth-child(2) { top: 3.3px; }
+.craft-panel-menu-hamburger span:nth-child(3) { top: 6.6px; }
+
+.craft-panel-menu-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+.craft-panel-menu-dots span {
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+[data-craft-pro="true"] .craft-panel-menu-hamburger,
+.craft-scope[data-craft-pro="true"] .craft-panel-menu-hamburger {
+  display: inline-block;
+}
+[data-craft-pro="true"] .craft-panel-menu-dots,
+.craft-scope[data-craft-pro="true"] .craft-panel-menu-dots {
+  display: none;
+}
+
+.craft-panel-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.craft-panel-footer {
+  height: var(--craft-panel-footer-h);
+  padding: 0 6px;
+  border-top: 1px solid var(--craft-separator);
+  background-color: var(--craft-card);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   12. Application Chrome (Title Bar, Options Bar, Toolbar, Status Bar, Dock)
+   -------------------------------------------------------------------------- */
+.craft-titlebar {
+  height: var(--craft-titlebar-height);
+  background-color: var(--craft-chrome);
+  border-bottom: 1px solid var(--craft-separator);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 10px;
+  user-select: none;
+}
+
+.craft-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+.craft-brand img {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: block;
+}
+.craft-menubar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.craft-menubar-item {
+  padding: 4px 8px;
+  border-radius: var(--craft-radius-sm);
+  font-size: var(--craft-fs-titlebar);
+  font-weight: 500;
+  color: var(--craft-text);
+  cursor: pointer;
+}
+.craft-menubar-item:hover,
+.craft-menubar-item.is-open {
+  background-color: var(--craft-hover);
+}
+
+.craft-window-controls {
+  display: inline-flex;
+  align-items: stretch;
+  height: 100%;
+}
+.craft-win-btn {
+  width: 42px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--craft-icon);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.craft-win-btn:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+.craft-win-btn.is-close:hover {
+  background-color: var(--craft-caption-close);
+  color: var(--craft-caption-close-text);
+}
+
+/* Contextual Tool Options Bar */
+.craft-options-bar {
+  height: var(--craft-optionsbar-height);
+  background-color: var(--craft-chrome);
+  border-bottom: 1px solid var(--craft-separator);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  overflow-x: auto;
+  user-select: none;
+}
+.craft-options-bar.is-narrow {
+  height: var(--craft-optionsbar-narrow-height);
+}
+.craft-vsep {
+  width: 1px;
+  height: 18px;
+  background-color: var(--craft-separator);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Tool Palette (panels/toolbar.rs) */
+.craft-toolbar {
+  width: var(--craft-toolbar-width);
+  background-color: var(--craft-chrome);
+  border-right: 1px solid var(--craft-separator);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0 8px 0;
+  gap: 2px;
+  user-select: none;
+  position: relative;
+  flex-shrink: 0;
+}
+.craft-toolbar.is-two-column {
+  width: calc(var(--craft-toolbar-width) * 1.82);
+}
+/* Studio dark subtle bottom violet wash (panels/toolbar.rs) */
+[data-craft-pro="false"][data-craft-dark="true"] .craft-toolbar {
+  background-image: linear-gradient(to bottom, transparent 50%, rgba(90, 70, 190, 0.13) 100%);
+}
+
+.craft-toolbar-collapse {
+  width: calc(100% - 8px);
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--craft-text-dim);
+  border-radius: var(--craft-radius-sm);
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.craft-toolbar-collapse:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+
+.craft-toolbar-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  justify-items: center;
+  width: 100%;
+  padding: 0 4px;
+}
+.craft-toolbar.is-two-column .craft-toolbar-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.craft-tool-btn {
+  width: var(--craft-toolbar-btn-size);
+  height: var(--craft-toolbar-btn-size);
+  border-radius: var(--craft-radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--craft-icon);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+.craft-tool-btn .craft-icon {
+  width: 18px;
+  height: 18px;
+}
+.craft-tool-btn:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+.craft-tool-btn:hover .craft-icon {
+  color: var(--craft-text);
+}
+.craft-tool-btn.is-active {
+  background-color: var(--craft-accent-soft);
+  border-color: var(--craft-accent-border);
+  color: var(--craft-accent-text);
+}
+.craft-tool-btn.is-active .craft-icon {
+  color: var(--craft-accent-text);
+}
+/* 4.5px corner flyout triangle for multi-tool slots */
+.craft-tool-btn.has-flyout::after {
+  content: '';
+  position: absolute;
+  right: 2.5px;
+  bottom: 2.5px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 4.5px 4.5px;
+  border-color: transparent transparent var(--craft-text-dim) transparent;
+}
+.craft-tool-btn.is-active.has-flyout::after {
+  border-color: transparent transparent var(--craft-accent-text) transparent;
+}
+
+/* Foreground / Background Color Chips (widgets/color.rs & swap_arrow.rs) */
+.craft-color-chips-wrap {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+/* Pro / Classic square overlapping chips */
+.craft-color-chips-pro {
+  position: relative;
+  width: 30px;
+  height: 30px;
+}
+[data-craft-round-chips="true"] .craft-color-chips-pro,
+.craft-scope[data-craft-round-chips="true"] .craft-color-chips-pro {
+  display: none;
+}
+.craft-chip-default-btn {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.craft-chip-swap-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--craft-text-dim);
+}
+.craft-chip-swap-btn:hover {
+  color: var(--craft-text);
+}
+.craft-chip-square-bg,
+.craft-chip-square-fg {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  border: 1px solid var(--craft-field-border);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+.craft-chip-square-fg {
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+.craft-chip-square-bg {
+  left: 10px;
+  top: 10px;
+  z-index: 1;
+}
+
+/* Studio round stacked 30px color chips (round_chips: true) */
+.craft-color-chips-studio {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+[data-craft-round-chips="true"] .craft-color-chips-studio,
+.craft-scope[data-craft-round-chips="true"] .craft-color-chips-studio {
+  display: flex;
+}
+.craft-chips-round-stack {
+  position: relative;
+  width: 34px;
+  height: 49px;
+}
+.craft-chip-round-fg,
+.craft-chip-round-bg {
+  position: absolute;
+  left: 2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--craft-card-border);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+}
+.craft-chip-round-fg {
+  top: 0;
+  z-index: 2;
+}
+.craft-chip-round-bg {
+  top: 19px;
+  z-index: 1;
+}
+.craft-studio-swap-arc {
+  width: 24px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--craft-text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.craft-studio-swap-arc:hover {
+  color: var(--craft-text);
+}
+
+/* Document Tab Bar & Canvas Surround */
+.craft-doc-tabs {
+  height: 28px;
+  background-color: var(--craft-tab-strip);
+  border-bottom: 1px solid var(--craft-separator);
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  user-select: none;
+}
+.craft-doc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: var(--craft-fs-body);
+  color: var(--craft-text-dim);
+  background-color: var(--craft-tab-strip);
+  border-right: 1px solid var(--craft-separator);
+  cursor: pointer;
+  position: relative;
+}
+.craft-doc-tab.is-active {
+  background-color: var(--craft-card);
+  color: var(--craft-text);
+  font-weight: 500;
+}
+.craft-doc-tab.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--craft-accent);
+}
+.craft-doc-tab-close {
+  font-size: 11px;
+  color: var(--craft-text-faint);
+  border-radius: 2px;
+  padding: 0 3px;
+}
+.craft-doc-tab-close:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+
+/* Canvas Viewport + Rulers */
+.craft-canvas-area {
+  position: relative;
+  background-color: var(--craft-canvas);
+  background-image: radial-gradient(var(--craft-canvas-dot) 1px, transparent 1px);
+  background-size: 16px 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.craft-ruler-top {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 0;
+  height: 18px;
+  background-color: var(--craft-chrome);
+  border-bottom: 1px solid var(--craft-separator);
+  font-family: var(--craft-font-mono);
+  font-size: 9px;
+  color: var(--craft-text-faint);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  user-select: none;
+}
+.craft-ruler-left {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  bottom: 0;
+  width: 18px;
+  background-color: var(--craft-chrome);
+  border-right: 1px solid var(--craft-separator);
+  font-family: var(--craft-font-mono);
+  font-size: 9px;
+  color: var(--craft-text-faint);
+  overflow: hidden;
+  user-select: none;
+}
+.craft-ruler-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background-color: var(--craft-chrome);
+  border-right: 1px solid var(--craft-separator);
+  border-bottom: 1px solid var(--craft-separator);
+  z-index: 2;
+}
+
+/* Collapsed Dock Icon Rail (rail_button) */
+.craft-rail {
+  width: var(--craft-rail-width);
+  background-color: var(--craft-chrome);
+  border-left: 1px solid var(--craft-separator);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.craft-rail-btn {
+  width: var(--craft-rail-btn-size);
+  height: var(--craft-rail-btn-size);
+  border-radius: var(--craft-radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--craft-icon);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+.craft-rail-btn:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+.craft-rail-btn.is-active {
+  background-color: var(--craft-accent-soft);
+  border-color: var(--craft-accent-border);
+  color: var(--craft-accent-text);
+}
+/* 3x16px left accent indicator bar on active Studio rail button */
+[data-craft-pro="false"] .craft-rail-btn.is-active::before,
+.craft-scope[data-craft-pro="false"] .craft-rail-btn.is-active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: 1.5px;
+  background-color: var(--craft-accent);
+}
+
+/* Bottom Status Bar (panels/status_bar.rs) */
+.craft-status-bar {
+  height: var(--craft-statusbar-height);
+  background-color: var(--craft-chrome);
+  border-top: 1px solid var(--craft-separator);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: var(--craft-fs-small);
+  color: var(--craft-text-dim);
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   13. Creative Pro Widgets (Layers Row, Angle Dial, Point Curve, Histogram)
+   -------------------------------------------------------------------------- */
+/* Layer Tree Row (panels/layer_row.rs) */
+.craft-layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--craft-separator);
+  border: 1px solid var(--craft-separator);
+  border-radius: var(--craft-radius-sm);
+  overflow: hidden;
+}
+.craft-layer-row {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  background-color: var(--craft-card);
+  color: var(--craft-text);
+  font-size: var(--craft-fs-body);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.craft-layer-row:hover {
+  background-color: var(--craft-hover);
+}
+.craft-layer-row.is-selected {
+  background-color: var(--craft-row-selected);
+}
+[data-craft-pro="false"] .craft-layer-row.is-selected,
+.craft-scope[data-craft-pro="false"] .craft-layer-row.is-selected {
+  box-shadow: inset 0 0 0 1px var(--craft-accent-border);
+}
+.craft-layer-eye {
+  width: 28px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--craft-separator);
+  flex-shrink: 0;
+  color: var(--craft-icon);
+}
+.craft-layer-eye.is-hidden .craft-icon {
+  opacity: 0.25;
+}
+/* Layer Label Color Badge in Eye Column (Theme::layer_label_colors) */
+.craft-layer-row[data-label-color="red"] .craft-layer-eye     { background-color: var(--craft-label-red-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="orange"] .craft-layer-eye  { background-color: var(--craft-label-orange-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="yellow"] .craft-layer-eye  { background-color: var(--craft-label-yellow-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="green"] .craft-layer-eye   { background-color: var(--craft-label-green-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="seafoam"] .craft-layer-eye { background-color: var(--craft-label-seafoam-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="blue"] .craft-layer-eye    { background-color: var(--craft-label-blue-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="indigo"] .craft-layer-eye  { background-color: var(--craft-label-indigo-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="magenta"] .craft-layer-eye { background-color: var(--craft-label-magenta-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="fuchsia"] .craft-layer-eye { background-color: var(--craft-label-fuchsia-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="violet"] .craft-layer-eye  { background-color: var(--craft-label-violet-eye); color: #e2e2e2; }
+.craft-layer-row[data-label-color="gray"] .craft-layer-eye    { background-color: var(--craft-label-gray-eye); color: #e2e2e2; }
+
+.craft-layer-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  min-width: 0;
+}
+.craft-layer-thumb {
+  width: 28px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid var(--craft-field-border);
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, #cccccc 25%, transparent 25%),
+    linear-gradient(-45deg, #cccccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #cccccc 75%),
+    linear-gradient(-45deg, transparent 75%, #cccccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.craft-layer-thumb.has-focus-corners::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid #ffffff;
+  box-shadow: inset 0 0 0 1px #000000;
+  pointer-events: none;
+}
+.craft-layer-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.craft-layer-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--craft-text-dim);
+  font-family: var(--craft-font-mono);
+  font-size: 10px;
+}
+
+/* Pro 5-icon Lock Strip vs Studio Single Lock Button */
+.craft-locks-pro {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+.craft-locks-studio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+[data-craft-pro="true"] .craft-locks-pro,
+.craft-scope[data-craft-pro="true"] .craft-locks-pro {
+  display: inline-flex;
+}
+[data-craft-pro="true"] .craft-locks-studio,
+.craft-scope[data-craft-pro="true"] .craft-locks-studio {
+  display: none;
+}
+
+/* 42x42 Angle Dial (widgets/angle_dial.rs) */
+.craft-angle-dial-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.craft-angle-dial {
+  width: var(--craft-angle-dial-size);
+  height: var(--craft-angle-dial-size);
+  border-radius: 50%;
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+.craft-angle-dial:hover,
+.craft-angle-dial.is-dragging {
+  border-color: var(--craft-accent);
+}
+.craft-angle-dial svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Interactive Point Curve & RGB Histogram Canvas (widgets/point_curve.rs) */
+.craft-curve-box,
+.craft-histogram-box {
+  background-color: var(--craft-histogram-bg);
+  border: 1px solid var(--craft-field-border);
+  border-radius: var(--craft-radius-sm);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+.craft-curve-box canvas,
+.craft-histogram-box canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Color Swatches & Checkerboard Preview (widgets/color.rs) */
+.craft-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+  gap: 3px;
+}
+.craft-swatch {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  position: relative;
+}
+.craft-swatch:hover {
+  transform: scale(1.12);
+  z-index: 2;
+  border-color: var(--craft-text);
+}
+.craft-swatch.is-selected {
+  box-shadow: 0 0 0 1.5px var(--craft-accent), inset 0 0 0 1px #ffffff;
+}
+
+/* Modal Dialog (docs/ui-dialogs.md: modal_scrim + modal_dialog_frame) */
+.craft-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--craft-scrim);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.craft-modal-backdrop.is-open {
+  display: flex;
+}
+.craft-dialog {
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius-lg);
+  box-shadow: var(--craft-window-shadow);
+  color: var(--craft-text);
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.craft-dialog-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px 16px;
+  border-bottom: 1px solid var(--craft-separator);
+}
+.craft-dialog-body {
+  padding: 16px;
+  overflow-y: auto;
+}
+.craft-dialog-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--craft-separator);
+  background-color: var(--craft-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* --------------------------------------------------------------------------
+   14. Demo Page Showcase Layout & Documentation Chrome
+   -------------------------------------------------------------------------- */
+.ds-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background-color: var(--craft-chrome);
+  border-bottom: 1px solid var(--craft-separator);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+.ds-topbar-inner {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ds-nav-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.ds-nav-pill {
+  padding: 4px 10px;
+  border-radius: var(--craft-radius-sm);
+  color: var(--craft-text-dim);
+  text-decoration: none;
+  font-size: var(--craft-fs-body);
+  font-weight: 500;
+}
+.ds-nav-pill:hover {
+  background-color: var(--craft-hover);
+  color: var(--craft-text);
+}
+
+.ds-container {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 24px 20px 72px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.ds-section {
+  scroll-margin-top: 74px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ds-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--craft-separator);
+}
+.ds-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: calc(18px * var(--craft-font-scale));
+  font-weight: 600;
+  color: var(--craft-text);
+}
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  font-family: var(--craft-font-mono);
+  font-size: calc(10.5px * var(--craft-font-scale));
+  color: var(--craft-text-dim);
+}
+.ds-badge-accent {
+  background-color: var(--craft-accent-soft);
+  border-color: var(--craft-accent-border);
+  color: var(--craft-accent-text);
+}
+
+.ds-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+.ds-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+.ds-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.ds-card {
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Miniature PhotoCraft Workspace Frame */
+.ds-workspace-shell {
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--craft-window-shadow);
+  background-color: var(--craft-dock);
+  display: flex;
+  flex-direction: column;
+}
+.ds-workspace-body {
+  display: grid;
+  grid-template-columns: auto 1fr var(--craft-dock-width) auto;
+  height: 688px;
+  min-height: 688px;
+}
+.ds-workspace-body .craft-tool-btn {
+  width: 26px;
+  height: 26px;
+}
+@media (max-width: 1024px) {
+  .ds-workspace-body {
+    grid-template-columns: auto 1fr 260px;
+  }
+  .ds-workspace-body .craft-rail {
+    display: none;
+  }
+}
+
+/* Theme Gallery Cards */
+.ds-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.ds-theme-card {
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  border-radius: var(--craft-radius-lg);
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 80ms ease, border-color 80ms ease;
+}
+.ds-theme-card:hover {
+  border-color: var(--craft-text-dim);
+  transform: translateY(-1px);
+}
+.ds-theme-card.is-active {
+  border: 1.5px solid var(--craft-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--craft-accent) 22%, transparent);
+}
+.ds-theme-mini-preview {
+  height: 56px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  display: grid;
+  grid-template-columns: 16px 1fr 48px;
+  grid-template-rows: 12px 1fr;
+}
+
+/* Semantic Token Swatch Matrix */
+.ds-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 8px;
+}
+.ds-token-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--craft-radius);
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-card-border);
+  cursor: pointer;
+}
+.ds-token-cell:hover {
+  border-color: var(--craft-accent);
+}
+.ds-token-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--craft-radius-sm);
+  border: 1px solid var(--craft-field-border);
+  flex-shrink: 0;
+}
+
+/* Tool & Icon Matrix */
+.ds-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 6px;
+}
+.ds-icon-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--craft-radius-sm);
+  background-color: var(--craft-field);
+  border: 1px solid var(--craft-field-border);
+  font-size: var(--craft-fs-small);
+  color: var(--craft-text);
+  cursor: pointer;
+}
+.ds-icon-cell:hover {
+  background-color: var(--craft-hover);
+  border-color: var(--craft-accent);
+}
+.ds-icon-cell .craft-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Toast Notification for copy feedback */
+.ds-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 8px 14px;
+  border-radius: var(--craft-radius);
+  background-color: var(--craft-card);
+  border: 1px solid var(--craft-accent);
+  box-shadow: var(--craft-popup-shadow);
+  color: var(--craft-text);
+  font-family: var(--craft-font-mono);
+  font-size: var(--craft-fs-mono);
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.ds-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}

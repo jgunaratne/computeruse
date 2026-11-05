@@ -30,7 +30,9 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) for how it all fits together.
 | **Models** | Claude via **Vertex AI** with Application Default Credentials (no Anthropic key needed), Claude via the Anthropic API, and **Gemini** via API key or Vertex. One canonical transcript; per-provider wire formats (built-in `computer_20250124` tool, the newer `computer_toolset_20260801`, or a plain JSON-schema tool) are negotiated automatically |
 | **Agent harness** | Observe → think → act loop; coordinate scaling to model-friendly resolutions; harness-served `zoom` for small text; key `repeat`; screen-settle detection; screenshot history pruning; stuck detection with a nudge before giving up; recovery from `max_tokens`-truncated turns; step / time / cost budgets; retries & health checks around the computer |
 | **Guardrails** | Blocked key chords (stricter on a non-isolated desktop), domain allow/block lists for typed URLs, approval gates for credentials / card numbers / destructive shell commands, type-length limit. Per-session overrides can only *tighten* |
-| **Operator console** | Live preview stream, timeline with model reasoning, action overlays (click rings, drag paths, scroll arrows, typed text), decision-vs-result frame scrubbing with `?step=N` deep links, pause / step / resume / cancel, approval banner, **take control** (click on the screen, type, press keys) and *instruct* the agent mid-task; a **chat panel** that talks to an Antigravity model about the session on screen (timeline + latest screenshot attached automatically) |
+| **Operator console** | Built on the **Craft Design System** (`web/public/vendor/craft-ds/`, 14 themes across Pro Spectrum, Studio, and Classic 3D bevel grammars + 4 UI font scales + `?theme=`/`?font=` deep links): live preview stream, timeline with model reasoning, action overlays (click rings, drag paths, scroll arrows, typed text), decision-vs-result frame scrubbing with `?step=N` deep links, pause / step / resume / cancel, approval banner, **take control** (click on the screen, type, press keys) and *instruct* the agent mid-task; a **chat panel** that talks to an Antigravity model about the session on screen (timeline + latest screenshot attached automatically) |
+| **Agents (flows)** | A drag-and-drop canvas that wires several agents' inputs and outputs together — computer agents, tool-less Antigravity model agents with roles (director, researcher, planner, observer, summarizer), critics with a rubric and a round limit, joins and a shared journal file — run by the server with live state on every card; starts from multi-agent patterns (iterative loop, verifiable goal, fan out & condense) |
+| **Schedules & permissions** | A **Schedules** tab and background scheduler that run Antigravity prompts, computer-use sessions, or multi-agent flows on an hourly, daily, weekly (weekday/weekend aware), monthly, or one-off cadence with optional tracking conditions, unread completion dots, and a side-pane editor; plus **granular per-operation tool permissions** (*Always allow*, *Ask every time*, *Never allow*, and *⋯ Custom* category summaries) and one-click sample prompts that prefill Chat |
 | **Telemetry & metrics** | Every event persisted to SQLite + PNG frames; success rate, false completions (model said done, verifier disagreed), failure taxonomy, p50/p95 model & action latency, guardrail interventions, cost; markdown **readout** for a usage write-up |
 | **Evals** | YAML suites with verifiers (`sim_state`, `chrome_tab`, `shell`, `final_text`, `guardrail`, `all`/`any`), negative controls, reference scripts so suites run without a model, concurrency, CI gate (`--min-pass-rate`), replay of recorded sessions |
 
@@ -148,9 +150,13 @@ says so otherwise) and nothing more.
   "and now?" cheaply; if nothing happened, the model is told that. Each user
   message shows a tag with what was attached. Turn *Share session* off for a
   general question.
-* **Chat only, never acts.** The conversation is started as a tool-less custom
-  agent (see above): the model cannot click, type, run commands, or change the
-  session — it will tell you to use the console's controls instead.
+* **Supervise and control the computer.** The chat can answer questions,
+  supervise the running agent, and execute controls or computer actions directly
+  on your behalf: click, type, press keys, pause, resume, step, cancel, instruct
+  the agent, adjust step budgets, or start new sessions. When computer actions
+  are executed, the chat captures the resulting screenshot and feeds it back so
+  the model can inspect the outcome. Executed actions appear with status badges
+  and session links in the chat stream.
 * **Models.** The picker lists Antigravity's models; switch at any time, even
   mid-conversation (the next reply comes from the new model, the transcript stays).
   The default is `COMPUTERUSE_CHAT_MODEL`, else the first Flash-class model.
@@ -252,6 +258,82 @@ preview stream raised to `COMPUTERUSE_CONTROL_PREVIEW_FPS` (12) while you drive.
   shown in the timeline as "type N characters".
 * Not forwarded: IME composition, the computer's clipboard back to yours, and
   touch input.
+
+## Agents: wire several agents together
+
+The console's **Agents** tab is a node editor for multi-agent work. Drag
+agents from the palette onto the canvas, wire an output dot to an input dot,
+and press **Run flow**: the server runs the graph, and every card shows its
+agent's live state — the session it is running with its latest screen, a
+model's reply, a critic's verdict and round, the journal's entries — while the
+wires that carry messages light up.
+
+| Node | Inputs → outputs | What it does |
+|---|---|---|
+| **Goal** | → `task` | Sends its request when the run starts. |
+| **Computer agent** | `task`, ○`context` → `result`, `screen` | Runs one computer-use session per task (any computer and model, a step budget, extra instructions, or a scripted demo) and reports the agent's final message and final screenshot. Its sessions appear on the Sessions page, tagged `flow`. |
+| **Model agent** | `in`, ○`context`, ○`screen` → `out` | A tool-less Antigravity model with a role — director, researcher, hypothesis & prediction, observer, summarizer, or your own instructions. Keeps its conversation across rounds unless set to start fresh. |
+| **Critic** | `work`, ○`context`, ○`screen` → `pass`, `revise` | Judges work against a rubric (and the attached screenshot), then routes it: `pass` goes on, `revise` goes back with feedback. After *max rounds* it passes the last work on, marked as stopped. |
+| **Join** | `in` → `out` | Waits for one message on every wire into it, then sends them on together (fan-in after parallel agents). |
+| **Journal** | `append` → `journal` | Memory as a file: appends every message to `journal.md` and sends the whole journal on as context. |
+| **Output** | `result`, ○`screen` | Collects the result; a run completes when every output has one. |
+| **Note** | — | A comment on the canvas. |
+
+Ports are typed — `text` (yellow) or `screen` (cyan) — and a wire only joins
+ports of the same type. A message on a filled input starts the node's work, one
+message at a time. A hollow input (○) is **context only**: it keeps the latest
+message from each wired source and uses it the next time the node is
+triggered. That is what lets a journal feed every agent without waking them
+all, and lets a critic look at a worker's final screen when its report arrives.
+
+**Patterns to start from** (*New flow*, or the cards on an empty Agents tab):
+
+* **Iterative loop** — a director hands a computer agent one task at a time; a
+  critic checks each report and screen against a rubric and sends the work back
+  with feedback until it passes; a journal keeps progress and dead ends outside
+  any one agent's context.
+* **Verifiable goal** — research, then a hypothesis with a prediction, a test
+  on the computer, an observation compared with the prediction, and a critic
+  that loops back to a new hypothesis; the journal holds every hypothesis and
+  observation.
+* **Fan out & condense** — three researchers in parallel, a join, and a
+  summarizer that answers with only their findings and the request in context.
+* **Parallel workers (offline)** — two scripted computer agents on the
+  simulated desktop, joined. Needs no model or credentials: the quickest way to
+  see a run.
+
+Model agents and critics need a running Antigravity (see above); computer
+agents use the same computers and models as any session.
+
+**Editing.** Drag the background to pan, wheel or pinch to zoom, **F** to fit.
+Drag a node by its header; click to select it; right-click for *Mute*,
+*Duplicate* and *Delete* (**M** on a card mutes it: every message to or from it
+is dropped). Drag from a dot to a dot of the opposite direction — or onto a
+card, which picks its first compatible port; while you drag, only the ports the
+wire can land on stay lit. Click a wire to select it; **Delete** removes the
+selection. The inspector edits the selected node (picking a role fills in its
+instructions), the selected wire, or the flow's name and budget, and shows the
+run log. Every edit is saved automatically.
+
+**Running.** A run is checked before anything starts — no goal or an empty
+one, model agents without Antigravity, an unavailable computer or model, an
+unknown demo script — and refused with the offending node named. It ends
+*completed* when every output has a result; *incomplete* when nothing is left
+to do but an output never got one, or when an output only got work a critic
+gave up on at its max rounds; *failed* when it goes quiet with a node in
+error, or as soon as the run's **agent-call budget** runs out (default 24, set
+per flow — every session and every model turn counts); *cancelled* by
+**Stop**. Critics stop loops after their max rounds, and a message that would
+bounce through more than 64 wires is dropped. One run per flow and up to four
+at a time; only one computer agent at a time uses the live `desktop`, the
+others queue.
+
+Flows are saved in `data/flows/<id>.json`; each run in
+`data/flow_runs/<run>/run.json`, with its journals beside it
+(`journal-<node>.md`). The API is `GET /api/flows/catalog`, `GET/POST
+/api/flows`, `GET/PUT/DELETE /api/flows/{id}`, `POST/GET /api/flows/{id}/runs`,
+`GET /api/flow-runs/{id}?after=<version>&wait_s=20` (long-polls for changes)
+and `POST /api/flow-runs/{id}/cancel`.
 
 ## Persistent browser profile (cookies, logins, SSO)
 
@@ -386,6 +468,27 @@ accept their conventional un-prefixed names. The important ones:
 | `COMPUTERUSE_ALLOWED_DOMAINS` / `_BLOCKED_DOMAINS` | `[]` | URL policy for typed navigation |
 | `COMPUTERUSE_BROWSER_SIZE` | `1280x800` | virtual display size for `browser` |
 | `COMPUTERUSE_DATA_DIR` | `data` | SQLite DB + frames |
+| `COMPUTERUSE_HOST` / `_PORT` | `127.0.0.1` / `8787` | where `serve` listens; anything but loopback turns the access token on (below) |
+| `COMPUTERUSE_ACCESS_TOKEN` | – (generated) | what other machines must present; a secret |
+
+### Opening the console from another machine
+
+By default the server listens on loopback only. To open it straight from your
+laptop (no tunnel), let it listen on every IPv4 interface:
+
+```bash
+uv run computeruse serve --host 0.0.0.0   # or COMPUTERUSE_HOST=0.0.0.0 in .env
+```
+
+Then other machines need its **access token**, because the API drives real
+computers (a browser profile that may be signed in, the live desktop). At startup
+the server logs a link such as `http://<this-host>:8787/?token=…`. Open it once:
+the server answers with a cookie (90 days) and drops the token from the address
+bar, so plain links work afterwards. Scripts send `Authorization: Bearer <token>`
+(or `?token=`). The token is `COMPUTERUSE_ACCESS_TOKEN` if set, otherwise
+generated on first use and kept in `<data_dir>/access_token` (owner-only), so
+restarts keep your cookie valid; delete the file to revoke it. Requests from the
+machine itself (loopback) never need it.
 
 ## Evals & metrics
 
@@ -420,9 +523,18 @@ interventions and cost, sliced by backend / model / tag, plus a daily series.
 
 ```bash
 make check          # ruff + tsc + pytest (Xvfb-backed tests skip if absent)
+make ui-check       # builds the UI, drives it in headless Chrome; screenshots in .ui-check/
+~/git/craft-ds/bin/craft-ds check .          # verifies hash-pinned Craft DS kit & manifest
+~/git/craft-ds/bin/craft-ds probe . --strict # runs all 15 Craft DS token/grammar/a11y probes
 make dev            # Vite dev server on :5173 proxying /api → :8787
 uv run pytest -q tests/test_loop.py
 ```
+
+`make ui-check` starts a throwaway server (empty data dir, free port), renders
+every page, builds a flow on the Agents tab with real drag-and-drop and mouse
+input, runs the offline pattern, checks a narrow window for sideways scrolling,
+and fails on uncaught page errors. It needs Chrome or Chromium (`CHROME_BIN`
+picks one). Look at the screenshots too: layout problems rarely fail an assertion.
 
 Project layout:
 
@@ -434,6 +546,7 @@ computeruse/
                 catalog, guardrails, prompts + tool schemas, AgentLoop
   telemetry/    event schema, SQLite store, in-process event bus, metrics + readout
   server/       FastAPI app, routes (REST + WS), orchestrator (sessions), schemas
+  flows/        agent flows: node types + validation, run engine (signal bus), templates, storage
   evals/        suite loader + verifiers, runner, YAML suites
   cli.py        serve | run | eval | readout | doctor | daemon
 web/            React + TypeScript console (Vite)
@@ -451,7 +564,9 @@ real daemon protocol through a stand-in `docker` CLI
 it runs is the one verified by the `remote` smoke run above — but the **image
 itself has not been built on the development machine** (no Docker available).
 Build it and run `computeruse eval -s browser-smoke -b docker -m scripted` the
-first time.
+first time. The server container listens on `0.0.0.0`, so the console asks for
+its access token even from your host (Docker's network is not loopback): open
+the link it logs at startup (`docker compose logs`).
 
 ## Status & limitations
 
@@ -461,11 +576,20 @@ first time.
   operator controls, evals and metrics. `docker` is verified down to the
   container runtime boundary only (fake `docker` CLI, real daemon).
 * Verified model routes: `claude-sonnet-4-5` and `claude-opus-5-5` on Vertex AI
-  (ADC), `gemini-3.8-flash` via API key, and a Flash-class model through a
-  Antigravity Language Server, each completing SimOS tasks end to end. The Anthropic
-  API path is exercised only by unit tests here (no key was available).
+  (ADC), `gemini-3.8-flash` via API key, and models served by an Antigravity
+  Language Server, each completing SimOS tasks end to end. Currently only Claude
+  models work as computer-use models through Antigravity (e.g. `claude-sonnet-4-6`);
+  Gemini models there fail on their first step, the Language Server rejecting their
+  function calls as malformed. The Anthropic API path is exercised only by unit
+  tests here (no key was available).
+* Agent flows: the offline pattern runs end to end in the console, and the fan-out
+  and iterative-loop patterns completed against a real Antigravity Language Server
+  (short SimOS runs); long runs on the `browser` computer are untested.
 * No KVM/QEMU-style full VM isolation yet: `browser` isolation is a private X
   display + fresh profile, `docker` is a container. See the roadmap in
   `ARCHITECTURE.md`.
-* The server binds to loopback and has **no authentication** of its own; it can
-  drive a real computer, so put it behind your own auth before exposing it.
+* Access control is a single shared token, required only when the server listens
+  beyond loopback (see *Opening the console from another machine*). It travels
+  over plain HTTP, so use it on networks you trust or put your own TLS proxy in
+  front. Loopback requests are always trusted: a proxy on the same host must pass
+  the client address on (`X-Forwarded-For`), or it would let everyone in.

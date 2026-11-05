@@ -18,8 +18,11 @@ from fastapi.staticfiles import StaticFiles
 
 from computeruse import __version__
 from computeruse.config import Settings, get_settings
+from computeruse.server.access import AccessGate, access_url, is_loopback
+from computeruse.server.flow_routes import router as flow_router
 from computeruse.server.orchestrator import Orchestrator
 from computeruse.server.routes import router
+from computeruse.server.schedule_routes import router as schedule_router
 
 log = logging.getLogger("computeruse.app")
 
@@ -32,8 +35,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = settings
         app.state.orch = orch = Orchestrator(settings)
         app.state.background = set()
-        log.info("computeruse %s listening on http://%s:%s (data_dir=%s)", __version__, settings.host,
+        orch.schedules.start_ticker()
+        shown_host = f"[{settings.host}]" if ":" in settings.host else settings.host
+        log.info("computeruse %s listening on http://%s:%s (data_dir=%s)", __version__, shown_host,
                  settings.port, settings.data_dir.resolve())
+        if settings.access_token and not is_loopback(settings.host):
+            log.info("other machines need the access token; open %s (once: the browser keeps a cookie)",
+                     access_url(settings.host, settings.port, settings.access_token))
         if settings.model_discovery != "off" and orch.catalog.any_available():
             # Verify which models the credentials can really call; the picker shows suggestions until this lands.
             task = asyncio.create_task(orch.catalog.discover(), name="model-discovery-startup")
@@ -52,7 +60,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True,
         allow_methods=["*"], allow_headers=["*"],
     )
+    if settings.access_token:
+        # Added last, so it runs first: nothing (CORS included) answers a request that lacks the token.
+        app.add_middleware(AccessGate, token=settings.access_token)
     app.include_router(router)
+    app.include_router(flow_router)
+    app.include_router(schedule_router)
 
     @app.exception_handler(ValueError)
     async def _value_error(_: Request, exc: ValueError) -> JSONResponse:

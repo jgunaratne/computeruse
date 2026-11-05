@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { navigate } from "../hooks/useRoute";
-import { fmtRelative } from "../lib/format";
+import { classNames, fmtRelative } from "../lib/format";
 import { MAX_STEPS_CAP } from "../lib/limits";
 import type { Backend, Config, CreateSessionBody, DemoTask, ProfileStatus, SecurityKeyForwarding } from "../types";
 import { ModelSelect, useModels } from "./ModelSelect";
-import { useToast } from "./ui";
+import { CheckToggle, useToast } from "./ui";
 
 type Mode = "model" | "scripted" | "replay";
 
@@ -97,17 +97,38 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
     .map(([p, st]) => `${p}: ${st.reason}`);
 
   return (
-    <form className="card pad stack" onSubmit={submit} id="new-session-form">
+    <form className="craft-panel card pad stack" onSubmit={submit} id="new-session-form">
       <div className="row wrap" style={{ justifyContent: "space-between" }}>
         <h2>New task</h2>
-        <div className="btn-group" role="tablist">
-          <button type="button" className={`btn sm ${mode === "model" ? "toggled" : ""}`} onClick={() => setMode("model")} title={config.models_available ? "Drive the computer with a model" : "No model provider is configured on the server"}>
+        <div className="craft-tab-strip btn-group" role="tablist" aria-label="Task mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "model"}
+            className={classNames("craft-tab", mode === "model" && "is-active toggled")}
+            onClick={() => setMode("model")}
+            title={config.models_available ? "Drive the computer with a model" : "No model provider is configured on the server"}
+          >
             Model
           </button>
-          <button type="button" className={`btn sm ${mode === "scripted" ? "toggled" : ""}`} onClick={() => setMode("scripted")} title="Replay a reference action script through the full harness (no credentials needed)">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "scripted"}
+            className={classNames("craft-tab", mode === "scripted" && "is-active toggled")}
+            onClick={() => setMode("scripted")}
+            title="Replay a reference action script through the full harness (no credentials needed)"
+          >
             Scripted demo
           </button>
-          <button type="button" className={`btn sm ${mode === "replay" ? "toggled" : ""}`} onClick={() => setMode("replay")} title="Re-issue the model turns recorded in a previous session">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "replay"}
+            className={classNames("craft-tab", mode === "replay" && "is-active toggled")}
+            onClick={() => setMode("replay")}
+            title="Re-issue the model turns recorded in a previous session"
+          >
             Replay
           </button>
         </div>
@@ -120,7 +141,9 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
       )}
       {mode === "scripted" && (
         <div className="field">
-          <label htmlFor="demo-task">Reference script</label>
+          <label htmlFor="demo-task" className="craft-pro-colon">
+            Reference script
+          </label>
           <select id="demo-task" className="select" value={demo} onChange={(e) => setDemo(e.target.value)}>
             {[...demosBySuite.entries()].map(([suite, items]) => (
               <optgroup key={suite} label={suite}>
@@ -137,19 +160,32 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
       )}
       {mode === "replay" && (
         <div className="field">
-          <label htmlFor="replay-id">Source session id</label>
+          <label htmlFor="replay-id" className="craft-pro-colon">
+            Source session id
+          </label>
           <input id="replay-id" className="input mono" placeholder="e.g. 3f9a1c2b7d4e" value={replayId} onChange={(e) => setReplayId(e.target.value)} />
         </div>
       )}
 
       <div className="field">
-        <label htmlFor="task">Task</label>
-        <textarea id="task" className="textarea" placeholder="e.g. Open Wikipedia, find the article on the Python programming language and tell me when it was first released." value={task} onChange={(e) => setTask(e.target.value)} required />
+        <label htmlFor="task" className="craft-pro-colon">
+          Task
+        </label>
+        <textarea
+          id="task"
+          className="textarea"
+          placeholder="e.g. Open Wikipedia, find the article on the Python programming language and tell me when it was first released."
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          required
+        />
       </div>
 
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="backend">Computer</label>
+          <label htmlFor="backend" className="craft-pro-colon">
+            Computer
+          </label>
           <select id="backend" className="select" value={backend} onChange={(e) => setBackend(e.target.value)}>
             {backends.map((b) => (
               <option key={b.id} value={b.id} disabled={!b.available}>
@@ -172,7 +208,9 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
           />
         )}
         <div className="field">
-          <label htmlFor="max-steps">Max steps</label>
+          <label htmlFor="max-steps" className="craft-pro-colon">
+            Max steps
+          </label>
           <input
             id="max-steps"
             className="input"
@@ -196,19 +234,21 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
 
       {backend === "browser" && (
         <div className="field" id="profile-field">
-          <label htmlFor="profile-mode">Browser profile</label>
+          <label htmlFor="profile-mode" className="craft-pro-colon">
+            Browser profile
+          </label>
           <select id="profile-mode" className="select" value={profile} onChange={(e) => setProfile(e.target.value as "persistent" | "ephemeral")}>
             <option value="persistent">Persistent — keep cookies, logins and SSO between sessions</option>
             <option value="ephemeral">Ephemeral — fresh profile, discarded when the session ends</option>
           </select>
           {profile === "persistent" && profileStatus ? (
             profileStatus.in_use ? (
-              <span className="small" style={{ color: "var(--warn)" }}>
+              <span className="small text-warn">
                 Another session is using the shared profile right now — this session would get a throwaway <b>copy</b> (existing logins work, new ones are not saved). Wait for it to finish to sign in for good.
               </span>
             ) : (
               <span className="small dim">
-                🔐 Cookies and logins are kept in <span className="mono">{profileStatus.path}</span>
+                Cookies and logins are kept in <span className="mono">{profileStatus.path}</span>
                 {profileStatus.exists ? ` · ${profileStatus.size_mb} MB · last used ${fmtRelative(profileStatus.last_used)}` : " · not created yet"}. One session at a time can write to it.
               </span>
             )
@@ -216,10 +256,10 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
             <span className="small dim">Nothing from this session survives it; no existing logins are available either.</span>
           )}
           {securityKey && (
-            <span className="small" id="security-key-hint" style={{ color: securityKey.available ? "var(--text-3)" : "var(--warn)" }} title={securityKey.detail}>
+            <span className={classNames("small", securityKey.available ? "dim" : "text-warn")} id="security-key-hint" title={securityKey.detail}>
               {securityKey.available
-                ? `🔑 Security-key prompts during sign-in reach your key through ${securityKey.transport === "remote-desktop" ? "your remote-desktop client" : "the SSH agent"}.`
-                : "🔑 No security-key forwarding detected — sign in with a one-time security code, or start the server from a terminal inside your remote-desktop session."}
+                ? `Security-key prompts during sign-in reach your key through ${securityKey.transport === "remote-desktop" ? "your remote-desktop client" : "the SSH agent"}.`
+                : "No security-key forwarding detected — sign in with a one-time security code, or start the server from a terminal inside your remote-desktop session."}
             </span>
           )}
         </div>
@@ -231,34 +271,48 @@ export function NewSessionForm({ backends, config, demos }: { backends: Backend[
         </summary>
         <div className="form-grid" style={{ marginTop: 10 }}>
           <div className="field">
-            <label htmlFor="max-duration">Max duration (s)</label>
+            <label htmlFor="max-duration" className="craft-pro-colon">
+              Max duration (s)
+            </label>
             <input id="max-duration" className="input" type="number" min={10} placeholder={String(config.defaults.max_duration_s)} value={maxDuration} onChange={(e) => setMaxDuration(e.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="max-cost">Cost cap (USD)</label>
+            <label htmlFor="max-cost" className="craft-pro-colon">
+              Cost cap (USD)
+            </label>
             <input id="max-cost" className="input" type="number" min={0} step="0.1" placeholder={config.defaults.max_cost_usd == null ? "none" : String(config.defaults.max_cost_usd)} value={maxCost} onChange={(e) => setMaxCost(e.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="allowed">Allowed domains</label>
+            <label htmlFor="allowed" className="craft-pro-colon">
+              Allowed domains
+            </label>
             <input id="allowed" className="input" placeholder="any (e.g. example.com, wikipedia.org)" value={allowed} onChange={(e) => setAllowed(e.target.value)} />
           </div>
         </div>
         <div className="row wrap" style={{ marginTop: 10, gap: 16 }}>
-          <label className="check">
-            <input type="checkbox" checked={startPaused} onChange={(e) => setStartPaused(e.target.checked)} /> Start paused (step through manually)
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} /> Auto-approve sensitive actions
-          </label>
+          <CheckToggle checked={startPaused} onChange={setStartPaused}>
+            Start paused (step through manually)
+          </CheckToggle>
+          <CheckToggle checked={autoApprove} onChange={setAutoApprove}>
+            Auto-approve sensitive actions
+          </CheckToggle>
         </div>
       </details>
 
       {error && <div className="form-error">{error}</div>}
       <div className="row">
-        <button className="btn primary" type="submit" disabled={submitting || !task.trim() || (mode === "replay" && !replayId.trim()) || (mode === "model" && !effectiveModel)} id="btn-start">
+        <button
+          className="craft-btn craft-btn-primary btn primary"
+          type="submit"
+          disabled={submitting || !task.trim() || (mode === "replay" && !replayId.trim()) || (mode === "model" && !effectiveModel)}
+          id="btn-start"
+        >
           {submitting ? "Starting…" : "Start session"}
         </button>
-        <span className="small dim">Defaults: {config.defaults.max_steps} steps · {Math.round(config.defaults.max_duration_s / 60)} min{config.defaults.max_cost_usd != null ? ` · $${config.defaults.max_cost_usd} cap` : ""}</span>
+        <span className="small dim">
+          Defaults: {config.defaults.max_steps} steps · {Math.round(config.defaults.max_duration_s / 60)} min
+          {config.defaults.max_cost_usd != null ? ` · $${config.defaults.max_cost_usd} cap` : ""}
+        </span>
       </div>
     </form>
   );

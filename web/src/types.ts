@@ -408,6 +408,16 @@ export interface ChatContext {
   note?: string;
 }
 
+export interface ChatActionExecution {
+  type: "command" | "action";
+  name: string;
+  params: Record<string, unknown>;
+  ok: boolean;
+  summary: string;
+  error?: string | null;
+  session_id?: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -422,6 +432,7 @@ export interface ChatMessage {
   error: string | null;
   pending: boolean;
   context: ChatContext | null;
+  actions?: ChatActionExecution[];
 }
 
 export interface ChatSummary {
@@ -460,4 +471,306 @@ export interface ChatSendResponse {
   user_message: ChatMessage;
   message: ChatMessage;
   chat: ChatSummary;
+}
+
+// --- agent flows (the Agents tab; see computeruse/flows) ---------------------------------
+
+export type FlowPortType = "text" | "screen";
+
+export interface FlowPortSpec {
+  name: string;
+  type: FlowPortType;
+  label: string;
+  /** Inputs only: true = a message here starts the node's work; false = latched as context. */
+  trigger: boolean;
+  doc: string;
+}
+
+export type FlowFieldKind = "text" | "textarea" | "number" | "select" | "role" | "model" | "computer_model" | "backend" | "demo_task";
+
+export interface FlowFieldSpec {
+  key: string;
+  label: string;
+  kind: FlowFieldKind;
+  default: string | number;
+  options?: { value: string; label: string }[];
+  min?: number;
+  max?: number;
+  placeholder: string;
+  doc: string;
+}
+
+export type FlowCategory = "start" | "agent" | "flow" | "memory" | "end" | "note";
+
+export interface FlowNodeTypeSpec {
+  type: string;
+  title: string;
+  desc: string;
+  category: FlowCategory;
+  inputs: FlowPortSpec[];
+  outputs: FlowPortSpec[];
+  fields: FlowFieldSpec[];
+  agent: boolean;
+  needs_antigravity: boolean;
+}
+
+export interface FlowTemplateSummary {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  needs_antigravity: boolean;
+}
+
+export interface FlowCatalog {
+  node_types: FlowNodeTypeSpec[];
+  port_types: Record<FlowPortType, { label: string; doc: string }>;
+  roles: { value: string; label: string; instructions: string }[];
+  templates: FlowTemplateSummary[];
+  antigravity: { available: boolean; reason: string; default_model: string | null; models: ChatModel[] };
+  limits: { max_nodes: number; max_edges: number };
+}
+
+export interface FlowNode {
+  id: string;
+  type: string;
+  label: string;
+  pos: [number, number];
+  config: Record<string, string | number>;
+  muted: boolean;
+}
+
+export interface FlowEdge {
+  id: string;
+  source: string;
+  source_port: string;
+  target: string;
+  target_port: string;
+}
+
+export interface FlowViewport {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+export interface Flow {
+  id: string;
+  name: string;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  viewport: FlowViewport;
+  settings: { max_agent_calls: number };
+  template: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export type FlowRunStatus = "running" | "completed" | "incomplete" | "failed" | "cancelled" | "interrupted";
+
+export interface FlowRunSummary {
+  id: string;
+  flow_id: string;
+  flow_name: string;
+  status: FlowRunStatus;
+  reason: string;
+  started_at: number;
+  ended_at: number | null;
+  invocations: number;
+  max_invocations: number;
+}
+
+export interface FlowSummary {
+  id: string;
+  name: string;
+  template: string | null;
+  created_at: number;
+  updated_at: number;
+  nodes: number;
+  edges: number;
+  last_run: { id: string; status: FlowRunStatus; started_at: number; ended_at: number | null } | null;
+}
+
+export interface FlowFrame {
+  session_id: string;
+  seq: number;
+  url: string;
+}
+
+export interface FlowSignal {
+  kind: string;
+  text: string;
+  chars: number;
+  frame: FlowFrame | null;
+  source: string;
+  source_port: string;
+  source_label: string;
+  meta: Record<string, unknown>;
+  ts: number;
+}
+
+export type FlowNodeStatus = "idle" | "waiting" | "running" | "done" | "stopped" | "error" | "muted";
+
+export interface FlowNodeState {
+  id: string;
+  type: string;
+  label: string;
+  status: FlowNodeStatus;
+  detail: string;
+  runs: number;
+  queued: number;
+  last_input: FlowSignal | null;
+  last_output: FlowSignal | null;
+  error: string | null;
+  session_id: string | null;
+  sessions: string[];
+  steps: number;
+  frame: FlowFrame | null;
+  verdict: "pass" | "revise" | "max_rounds" | null;
+  rounds: number;
+  received: number;
+  expected: number;
+  entries: number;
+  result: string | null;
+  conversation_id: string | null;
+  updated_at: number;
+}
+
+export interface FlowLogEntry {
+  seq: number;
+  ts: number;
+  type: "message" | "node" | "run" | "drop";
+  node?: string;
+  source?: string;
+  source_port?: string;
+  target?: string;
+  target_port?: string;
+  kind?: string;
+  text?: string;
+  status?: string;
+  frame?: boolean;
+  dropped?: boolean;
+  session_id?: string;
+}
+
+export interface FlowRun extends FlowRunSummary {
+  version: number;
+  goal: string | null;
+  nodes: Record<string, FlowNodeState>;
+  log: FlowLogEntry[];
+  results: { node: string; label: string; text: string; verdict: string | null; frame: FlowFrame | null }[];
+}
+
+// --- scheduled automations & granular permissions (the Schedules tab) --------------------
+
+export type ScheduleFrequency = "hourly" | "daily" | "weekly" | "monthly" | "once";
+export type ScheduleStatus = "active" | "paused" | "completed";
+export type PauseReason = "user_action" | "execution_failed" | null;
+export type ScheduleTargetKind = "antigravity_chat" | "session" | "flow";
+export type PermissionLevel = "allow" | "ask" | "deny";
+
+export interface ScheduleTrigger {
+  frequency: ScheduleFrequency;
+  minute_of_hour: number;
+  time_of_day: string;
+  days_of_week: number[];
+  day_of_month: number;
+  run_date: string | null;
+  condition: string;
+  end_date: string | null;
+}
+
+export interface ScheduleRun {
+  id: string;
+  schedule_id: string;
+  schedule_title: string;
+  target_kind: ScheduleTargetKind;
+  status: "running" | "completed" | "failed";
+  started_at: number;
+  ended_at: number | null;
+  duration_ms: number | null;
+  summary: string;
+  error: string | null;
+  chat_id: string | null;
+  session_id: string | null;
+  flow_id: string | null;
+  flow_run_id: string | null;
+}
+
+export interface Schedule {
+  id: string;
+  title: string;
+  plan: string;
+  target_kind: ScheduleTargetKind;
+  backend: string;
+  model: string | null;
+  flow_id: string | null;
+  demo_task: string | null;
+  status: ScheduleStatus;
+  pause_reason: PauseReason;
+  trigger: ScheduleTrigger;
+  unread: boolean;
+  created_at: number;
+  updated_at: number;
+  last_run_at: number | null;
+  next_run_at: number | null;
+  run_count: number;
+  last_run: ScheduleRun | null;
+  badge: string;
+  trigger_summary: string;
+  runs?: ScheduleRun[];
+}
+
+export interface SuggestedSchedule {
+  id: string;
+  title: string;
+  description: string;
+  target_kind: ScheduleTargetKind;
+  backend: string;
+  demo_task?: string;
+  flow_id?: string;
+  plan: string;
+  trigger: Partial<ScheduleTrigger>;
+  badge: string;
+  trigger_summary: string;
+}
+
+export interface PermissionOperation {
+  key: string;
+  label: string;
+  description: string;
+  default: PermissionLevel;
+  level: PermissionLevel;
+}
+
+export interface SamplePrompt {
+  label: string;
+  prompt: string;
+}
+
+export interface PermissionCategory {
+  id: string;
+  title: string;
+  description: string;
+  level: PermissionLevel | "custom";
+  count: number;
+  operations: PermissionOperation[];
+  sample_prompts: SamplePrompt[];
+}
+
+export interface PermissionsResponse {
+  categories: PermissionCategory[];
+  values: Record<string, PermissionLevel>;
+}
+
+export interface ScheduleCatalog {
+  suggested: SuggestedSchedule[];
+  permissions: PermissionsResponse;
+  flows: FlowSummary[];
+  flow_templates: FlowTemplateSummary[];
+  antigravity: {
+    available: boolean;
+    reason: string;
+    default_model: string | null;
+  };
 }
