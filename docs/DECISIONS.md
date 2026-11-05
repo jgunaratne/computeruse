@@ -6,7 +6,7 @@ Numbered, append-only. Context / Decision / Consequences. Read before re-decidin
 
 **Context.** `computeruse` needs a dense, themeable desktop-tool UI for supervising live computer-use sessions, multi-agent flows, schedules, metrics, and evals, and should share visual grammar and tokens with PhotoCraft and sibling tools.
 
-**Decision.** Vendor the Craft DS kit (`web/public/vendor/craft-ds/`, v0.16.0) read-only and hash-pinned; serve it from Vite's `public/` directory so both `make dev` and FastAPI's `web/dist` static mount serve `/vendor/craft-ds/...`; verify `proMedium`, `pro`, `proLight`, `studio`, `studioLight`, and `classic` across `small` and `large` UI font sizes at `1440` and `820` px wide; run `craft-ds check` and `craft-ds probe` alongside `make check` and `make ui-check`.
+**Decision.** Vendor the Craft DS kit (`web/public/vendor/craft-ds/`, v0.16.0) read-only and hash-pinned; serve it from Vite's `public/` directory so both `make dev` and FastAPI's web/dist static mount serve `/vendor/craft-ds/...`; verify `proMedium`, `pro`, `proLight`, `studio`, `studioLight`, and `classic` across `small` and `large` UI font sizes at `1440` and `820` px wide; run `craft-ds check` and `craft-ds probe` alongside `make check` and `make ui-check`.
 
 **Consequences.** Zero raw colour, radius, or font-family literals in `web/index.html` or `web/src/**`; zero `[data-craft-theme=…]` patches, `--craft-*` redefinitions, or `.craft-*` restyling selectors; kit upgrades happen atomically via `craft-ds update .`.
 

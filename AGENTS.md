@@ -4,8 +4,8 @@ This file is read by every agent tool (`GEMINI.md` and `CLAUDE.md` import it via
 
 ## Commands
 - `make check` — Python lint (`ruff check .`), TypeScript check (`cd web && npx tsc --noEmit`), and pytest (`uv run pytest -q`).
-- `make web` — Build the Vite frontend into `web/dist`.
-- `make ui-check` — Build `web/dist`, start a throwaway server, exercise every console page and flow editor interaction in headless Chrome, verify narrow-viewport layout (`820×900`), and write screenshots to `.ui-check/`.
+- `make web` — Build the Vite frontend into web/dist (gitignored build output).
+- `make ui-check` — Build web/dist, start a throwaway server, exercise every console page and flow editor interaction in headless Chrome, verify narrow-viewport layout (`820×900`), and write screenshots to `.ui-check/`.
 - `~/git/craft-ds/bin/craft-ds check .` — Verify the Craft Design System harness, vendored kit hashes, rules, skills, hooks, and documentation links.
 - `~/git/craft-ds/bin/craft-ds probe .` — Run the 15 Craft DS drift probes across `web/index.html`, `web/src/**/*.tsx`, `web/src/**/*.ts`, and `web/src/**/*.css`.
 
